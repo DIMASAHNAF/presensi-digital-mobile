@@ -3,12 +3,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/storage_service.dart';
-import 'features/auth/login_screen.dart';
-import 'features/dashboard/dashboard_screen.dart';
+import 'features/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Indonesian date formatting
   await initializeDateFormatting('id_ID', null);
 
@@ -23,8 +22,6 @@ class PresensiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool loggedIn = StorageService.isLoggedIn();
-
     return MaterialApp(
       title: 'Presensi SMKN 1 Beringin',
       debugShowCheckedModeBanner: false,
@@ -38,8 +35,7 @@ class PresensiApp extends StatelessWidget {
         Locale('id', 'ID'),
         Locale('en', 'US'),
       ],
-      home: loggedIn ? const DashboardScreen() : const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }
-

@@ -6,10 +6,16 @@ class UserModel {
   final int? kelasId;
   final String? kelasNama;
   final String? avatar;
+  final String? banner;
   final bool isFaceEnrolled;
   final bool hasChangedPassword;
   final String? namaOrtu;
   final String? noHpOrtu;
+  final String? bio;
+  final String? website;
+
+  String get nama => name;
+  String get kelas => kelasNama ?? 'Siswa';
 
   UserModel({
     required this.id,
@@ -19,10 +25,13 @@ class UserModel {
     this.kelasId,
     this.kelasNama,
     this.avatar,
+    this.banner,
     required this.isFaceEnrolled,
     required this.hasChangedPassword,
     this.namaOrtu,
     this.noHpOrtu,
+    this.bio,
+    this.website,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -34,10 +43,13 @@ class UserModel {
       kelasId: json['kelas_id'],
       kelasNama: json['kelas_nama'],
       avatar: json['avatar'],
+      banner: json['banner'],
       isFaceEnrolled: json['is_face_enrolled'] ?? false,
       hasChangedPassword: json['has_changed_password'] ?? false,
       namaOrtu: json['nama_ortu'],
       noHpOrtu: json['no_hp_ortu'],
+      bio: json['bio'],
+      website: json['website'],
     );
   }
 
@@ -50,10 +62,13 @@ class UserModel {
       'kelas_id': kelasId,
       'kelas_nama': kelasNama,
       'avatar': avatar,
+      'banner': banner,
       'is_face_enrolled': isFaceEnrolled,
       'has_changed_password': hasChangedPassword,
       'nama_ortu': namaOrtu,
       'no_hp_ortu': noHpOrtu,
+      'bio': bio,
+      'website': website,
     };
   }
 }

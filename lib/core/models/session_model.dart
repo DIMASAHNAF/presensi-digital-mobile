@@ -58,6 +58,11 @@ class SessionDetail {
   final String tanggal;
   final String tipe;
 
+  String get jamMulai => jamPelajaran.contains('-') ? jamPelajaran.split('-').first.trim() : jamPelajaran;
+  String get jamSelesai => jamPelajaran.contains('-') ? jamPelajaran.split('-').last.trim() : jamPelajaran;
+  String get namaKelas => kelasNama;
+  String get keterangan => guruNama.isNotEmpty ? 'Guru: $guruNama' : 'Presensi Pembelajaran';
+
   SessionDetail({
     required this.id,
     required this.kelasId,

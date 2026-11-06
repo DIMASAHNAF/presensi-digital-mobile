@@ -8,6 +8,7 @@ class ApiConstants {
 
   // Siswa Endpoints
   static const String me = '$baseUrl/siswa/me';
+  static const String dashboardFull = '$baseUrl/siswa/dashboard-full';
   static const String sesiAktif = '$baseUrl/siswa/sesi-aktif';
   static const String scanWajah = '$baseUrl/siswa/scan-wajah';
   static const String riwayat = '$baseUrl/siswa/riwayat';

@@ -1,4 +1,4 @@
-import 'dart:math';
+  import 'dart:math';
 import 'package:geolocator/geolocator.dart';
 import '../models/session_model.dart';
 
@@ -8,6 +8,8 @@ class GeofenceResult {
   final bool isMocked;
   final Position? position;
   final String? errorMessage;
+
+  bool get isInsideRadius => isInside;
 
   GeofenceResult({
     required this.isInside,

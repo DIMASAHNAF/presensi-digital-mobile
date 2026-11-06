@@ -1,17 +1,21 @@
 import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/models/user_model.dart';
-import '../../core/models/session_model.dart';
+import '../../core/models/dashboard_full_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/location_service.dart';
 import '../scanner/scanner_screen.dart';
-import '../history/history_screen.dart';
-import '../profile/profile_screen.dart';
 import '../auth/login_screen.dart';
+import 'tabs/beranda_tab.dart';
+import 'tabs/kehadiran_tab.dart';
+import 'tabs/teman_tab.dart';
+import 'tabs/profil_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,13 +26,11 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
-  UserModel? _user;
-  ActiveSessionResponse? _sessionResp;
+  DashboardFullModel? _data;
   GeofenceResult? _geofenceResult;
 
   bool _isLoading = true;
-  bool _isCheckingGps = false;
-  Timer? _gpsTimer;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -36,631 +38,575 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadInitialData();
   }
 
-  @override
-  void dispose() {
-    _gpsTimer?.cancel();
-    super.dispose();
-  }
-
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
-    
-    // 1. Load user profile
-    final userRes = await ApiService.getProfile();
-    if (userRes.success && userRes.data != null) {
-      _user = userRes.data;
-    } else {
-      _user = StorageService.getUser();
-    }
-
-    // 2. Load active session
-    await _refreshSession();
-
-    setState(() => _isLoading = false);
-
-    // 3. Periodic GPS geofence check every 15 seconds
-    _gpsTimer?.cancel();
-    _gpsTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted && _sessionResp?.geofencing != null) {
-        _checkGeofence();
-      }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
     });
-  }
 
-  Future<void> _refreshSession() async {
-    final sessRes = await ApiService.getActiveSession();
-    if (sessRes.success && sessRes.data != null) {
-      _sessionResp = sessRes.data;
-      if (_sessionResp!.geofencing != null) {
-        await _checkGeofence();
+    final res = await ApiService.getDashboardFull();
+
+    if (!mounted) return;
+
+    if (res.success && res.data != null) {
+      _data = res.data;
+
+      // Check geofence
+      if (_data!.geofencing != null) {
+        LocationService.verifyGeofence(_data!.geofencing!).then((geoRes) {
+          if (mounted) {
+            setState(() => _geofenceResult = geoRes);
+          }
+        });
       }
-    }
-  }
 
-  Future<void> _checkGeofence() async {
-    if (_sessionResp?.geofencing == null) return;
-    setState(() => _isCheckingGps = true);
-    final result = await LocationService.verifyGeofence(_sessionResp!.geofencing!);
-    if (mounted) {
+      setState(() => _isLoading = false);
+    } else {
       setState(() {
-        _geofenceResult = result;
-        _isCheckingGps = false;
+        _isLoading = false;
+        _errorMessage = res.message;
       });
     }
   }
 
-  void _openScanner() async {
-    if (_sessionResp?.geofencing == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfigurasi geofencing sekolah belum siap.')),
-      );
+  void _openScanner() {
+    if (_data == null || _data!.geofencing == null) {
+      _showAppleToast('Konfigurasi presensi belum siap.');
       return;
     }
 
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ScannerScreen(
-          geofenceConfig: _sessionResp!.geofencing!,
-          sessionDetail: _sessionResp!.sesi,
+    Navigator.of(context)
+        .push(
+          CupertinoPageRoute(
+            builder: (_) => ScannerScreen(
+              geofenceConfig: _data!.geofencing!,
+              sessionDetail: _data!.sesi,
+            ),
+          ),
+        )
+        .then((_) => _loadInitialData());
+  }
+
+  void _showAppleToast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFF1C1C1E),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
+  }
 
-    if (result == true) {
-      // Refresh session after successful attendance scan
-      await _loadInitialData();
+  Future<void> _handleLogout() async {
+    await StorageService.clear();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      CupertinoPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  void _confirmLogoutDialog() {
+    HapticFeedback.mediumImpact();
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text(
+          'Keluar dari Akun?',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+          ),
+        ),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            'Anda harus masuk kembali menggunakan NISN untuk melakukan presensi.',
+            style: GoogleFonts.inter(fontSize: 13),
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleLogout();
+            },
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat Pagi';
+    if (hour < 15) return 'Selamat Siang';
+    if (hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
+
+  String _getFirstName() {
+    if (_data == null) return 'Siswa';
+    final parts = _data!.user.nama.trim().split(' ');
+    if (parts.isEmpty) return 'Siswa';
+    final name = parts[0];
+    return name[0].toUpperCase() + name.substring(1).toLowerCase();
+  }
+
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    const days = [
+      'SENIN',
+      'SELASA',
+      'RABU',
+      'KAMIS',
+      'JUMAT',
+      'SABTU',
+      'MINGGU'
+    ];
+    const months = [
+      'JANUARI',
+      'FEBRUARI',
+      'MARET',
+      'APRIL',
+      'MEI',
+      'JUNI',
+      'JULI',
+      'AGUSTUS',
+      'SEPTEMBER',
+      'OKTOBER',
+      'NOVEMBER',
+      'DESEMBER'
+    ];
+    final dayName = days[now.weekday - 1];
+    final monthName = months[now.month - 1];
+    return '$dayName, ${now.day} $monthName';
+  }
+
+  Widget _buildTab() {
+    if (_data == null) return const SizedBox.shrink();
+
+    switch (_currentIndex) {
+      case 0:
+        return BerandaTab(
+          key: const ValueKey('beranda'),
+          data: _data!,
+          geofenceResult: _geofenceResult,
+          onOpenScanner: _openScanner,
+          onOpenKehadiran: () => setState(() => _currentIndex = 1),
+          onOpenTeman: () => setState(() => _currentIndex = 2),
+          onProfileUpdated: (updatedUser) => _loadInitialData(),
+        );
+      case 1:
+        return KehadiranTab(key: const ValueKey('kehadiran'), data: _data!);
+      case 2:
+        return TemanTab(key: const ValueKey('teman'), data: _data!);
+      case 3:
+        return ProfilTab(
+          key: const ValueKey('profil'),
+          data: _data!,
+          onLogout: _confirmLogoutDialog,
+        );
+      default:
+        return const SizedBox.shrink();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentIndex == 1) {
-      return HistoryScreen(onBack: () => setState(() => _currentIndex = 0));
-    }
-    if (_currentIndex == 2) {
-      return ProfileScreen(
-        user: _user,
-        onBack: () => setState(() => _currentIndex = 0),
-        onLogout: () async {
-          await StorageService.clear();
-          if (!mounted) return;
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
-        },
-      );
-    }
-
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        titleSpacing: 20,
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-                color: AppColors.surfaceMuted,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: _user?.avatar != null && _user!.avatar!.isNotEmpty
-                  ? Image.network(
-                      'https://presensi.smknegeri1beringin.sch.id/storage/${_user!.avatar}',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.person_rounded,
-                        color: AppColors.primaryBlue,
-                        size: 22,
+      backgroundColor: const Color(0xFFF2F2F7), // iOS Grouped Background
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Stack(
+            children: [
+              // Main Tab View
+              Positioned.fill(
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      // ── iOS Native Header ──
+                      _buildIOSHeader(),
+
+                      // ── Tab Body with Smooth Transition ──
+                      Expanded(
+                        child: _isLoading
+                            ? _buildSkeletonLoading()
+                            : _errorMessage != null
+                                ? _buildErrorState()
+                                : RefreshIndicator(
+                                    onRefresh: _loadInitialData,
+                                    color: AppColors.primaryBlue,
+                                    edgeOffset: 10,
+                                    child: AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 250),
+                                      switchInCurve: Curves.easeOutCubic,
+                                      switchOutCurve: Curves.easeInCubic,
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: child,
+                                        );
+                                      },
+                                      child: _buildTab(),
+                                    ),
+                                  ),
                       ),
-                    )
-                  : const Icon(
-                      Icons.person_rounded,
-                      color: AppColors.primaryBlue,
-                      size: 22,
-                    ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _user?.name ?? 'Siswa SMKN 1 Beringin',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMain,
-                    ),
+                    ],
                   ),
-                  Text(
-                    '${_user?.kelasNama ?? "Kelas Siswa"} • NISN ${_user?.nisn ?? "-"}',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary),
-            onPressed: _loadInitialData,
-            tooltip: 'Perbarui Data',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadInitialData,
-              color: AppColors.primaryBlue,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Live Geofencing Status Radar Pill
-                    _buildGeofenceCard(),
-                    const SizedBox(height: 16),
-
-                    // 2. Active Session Card
-                    _buildSessionCard(),
-                    const SizedBox(height: 20),
-
-                    // 3. Main Action: Biometric Scan Button
-                    _buildScanActionButton(),
-                    const SizedBox(height: 24),
-
-                    // 4. Today's Attendance Detail Card
-                    _buildTodayStatusCard(),
-                  ],
                 ),
               ),
-            ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primaryBlue,
-          unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
-          elevation: 0,
-          onTap: (idx) => setState(() => _currentIndex = idx),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-              label: 'Beranda',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded),
-              label: 'Riwayat',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Profil',
-            ),
-          ],
+
+              // ── Apple Floating Frosted Glass Dock ──
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 24,
+                child: _buildFloatingDock(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildGeofenceCard() {
-    final isInside = _geofenceResult?.isInside ?? false;
-    final isMocked = _geofenceResult?.isMocked ?? false;
-    final dist = _geofenceResult?.distanceMeters ?? 0.0;
+  // ═══════════════════════════════════════════════════════════
+  //  iOS NATIVE TOP BAR
+  // ═══════════════════════════════════════════════════════════
 
-    Color bg;
-    Color border;
-    Color textColor;
-    IconData icon;
-    String title;
-    String subtitle;
-
-    if (_isCheckingGps) {
-      bg = AppColors.background;
-      border = AppColors.border;
-      textColor = AppColors.textSecondary;
-      icon = Icons.gps_not_fixed_rounded;
-      title = 'Memeriksa Satelit GPS...';
-      subtitle = 'Menghubungkan ke sensor lokasi perangkat';
-    } else if (isMocked) {
-      bg = AppColors.dangerBg;
-      border = AppColors.dangerBorder;
-      textColor = AppColors.danger;
-      icon = Icons.warning_amber_rounded;
-      title = 'Lokasi Palsu / Fake GPS Terdeteksi';
-      subtitle = 'Nonaktifkan aplikasi mock location di Pengaturan Android';
-    } else if (isInside) {
-      bg = AppColors.successBg;
-      border = AppColors.successBorder;
-      textColor = AppColors.success;
-      icon = Icons.check_circle_rounded;
-      title = 'Di Dalam Radius Sekolah';
-      subtitle = 'Area SMK Negeri 1 Beringin • Sinyal GPS Terkunci';
-    } else {
-      bg = AppColors.warningBg;
-      border = AppColors.warningBorder;
-      textColor = AppColors.warning;
-      icon = Icons.location_off_rounded;
-      title = 'Di Luar Area Presensi';
-      subtitle = dist < 5000
-          ? 'Jarak ke sekolah: ${dist.toStringAsFixed(0)}m • Presensi ditolak di luar radius'
-          : 'Anda berada jauh dari sekolah • Presensi hanya berlaku di lingkungan sekolah';
-    }
+  Widget _buildIOSHeader() {
+    final bool inRadius = _geofenceResult?.isInsideRadius ?? false;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF2F2F7),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Icon(icon, color: textColor, size: 20),
-          ),
-          const SizedBox(width: 14),
+          // Greeting & Date (Apple Large Title Subtitle)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  title,
+                  _getFormattedDate(),
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: textColor,
+                    color: const Color(0xFF8E8E93),
+                    letterSpacing: 0.8,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  '${_getGreeting()}, ${_getFirstName()} 👋',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+
+          // ── GPS Geofence Status Pill ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: inRadius
+                  ? const Color(0xFF34C759).withOpacity(0.12)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: inRadius
+                    ? const Color(0xFF34C759).withOpacity(0.3)
+                    : const Color(0xFFE5E5EA),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: inRadius
+                        ? const Color(0xFF34C759)
+                        : const Color(0xFFFF9500),
+                    shape: BoxShape.circle,
+                    boxShadow: inRadius
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF34C759).withOpacity(0.5),
+                              blurRadius: 6,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  inRadius ? 'Area Sekolah' : 'Cek Lokasi',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    color: inRadius
+                        ? const Color(0xFF248A3D)
+                        : const Color(0xFF8E8E93),
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.my_location_rounded, size: 18, color: AppColors.textSecondary),
-            onPressed: _checkGeofence,
-            tooltip: 'Kalibrasi GPS',
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildSessionCard() {
-    final sess = _sessionResp?.sesi;
-    final hasSesi = _sessionResp?.hasSesi ?? false;
+          const SizedBox(width: 8),
 
-    if (!hasSesi || sess == null) {
-      return Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.event_busy_rounded, color: AppColors.textMuted, size: 36),
-            const SizedBox(height: 10),
-            Text(
-              'Tidak Ada Sesi Presensi Aktif',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Belum ada guru mata pelajaran atau walikelas yang membuka sesi presensi untuk kelas Anda saat ini.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'SESI AKTIF HARI INI',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryBlue,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Text(
-                DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(DateTime.now()),
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            sess.jamPelajaran,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textMain,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(Icons.person_pin_rounded, size: 16, color: AppColors.textSecondary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Guru Pengajar: ${sess.guruNama}',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScanActionButton() {
-    final sudahHadir = _sessionResp?.sudahHadir ?? false;
-    final hasSesi = _sessionResp?.hasSesi ?? false;
-    final info = _sessionResp?.presensiInfo;
-
-    if (sudahHadir) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.successBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.successBorder, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.success,
+          // ── Scanner Quick Action Button (Apple Tactile) ──
+          GestureDetector(
+            onTap: _openScanner,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF007AFF),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF007AFF).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.check_rounded, color: Colors.white, size: 32),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Presensi Berhasil Dicatat!',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tercatat masuk pada ${info?.waktuScan ?? "-"} WIB'
-              '${(info?.lateMinutes ?? 0) > 0 ? " (Terlambat ${info!.lateMinutes} menit)" : " (Tepat Waktu)"}',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+              child: const Icon(
+                CupertinoIcons.viewfinder,
+                color: Colors.white,
+                size: 19,
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: (!hasSesi) ? null : _openScanner,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.border,
-          disabledForegroundColor: AppColors.textMuted,
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  APPLE FROSTED GLASS DOCK (BOTTOM NAVIGATION)
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildFloatingDock() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDockItem(0, 'Beranda', CupertinoIcons.house_fill,
+                  CupertinoIcons.house),
+              _buildDockItem(1, 'Kehadiran', CupertinoIcons.chart_pie_fill,
+                  CupertinoIcons.chart_pie),
+              _buildDockItem(2, 'Teman', CupertinoIcons.person_2_fill,
+                  CupertinoIcons.person_2),
+              _buildDockItem(3, 'Profil',
+                  CupertinoIcons.person_crop_circle_fill,
+                  CupertinoIcons.person_crop_circle),
+            ],
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: 200.ms)
+        .slideY(
+          begin: 0.25,
+          end: 0,
+          duration: 500.ms,
+          delay: 200.ms,
+          curve: Curves.easeOutBack,
+        );
+  }
+
+  Widget _buildDockItem(
+    int index,
+    String label,
+    IconData activeIcon,
+    IconData inactiveIcon,
+  ) {
+    final isActive = _currentIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        if (_currentIndex != index) {
+          HapticFeedback.selectionClick();
+          setState(() => _currentIndex = index);
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        padding: isActive
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 9)
+            : const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF007AFF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF007AFF).withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.camera_alt_rounded, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              hasSesi ? 'Pindai Wajah Sekarang' : 'Sesi Belum Tersedia',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
+            Icon(
+              isActive ? activeIcon : inactiveIcon,
+              size: 20,
+              color: isActive ? Colors.white : const Color(0xFF8E8E93),
             ),
+            if (isActive) ...[
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTodayStatusCard() {
-    final info = _sessionResp?.presensiInfo;
-    final sudahHadir = _sessionResp?.sudahHadir ?? false;
+  // ═══════════════════════════════════════════════════════════
+  //  SKELETON & ERROR STATES
+  // ═══════════════════════════════════════════════════════════
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+  Widget _buildSkeletonLoading() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Ringkasan Kehadiran Anda',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMain,
+          Container(
+            height: 180,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
             ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricTile(
-                  label: 'Status Hari Ini',
-                  value: sudahHadir ? 'Hadir' : 'Belum Presensi',
-                  valueColor: sudahHadir ? AppColors.success : AppColors.textMuted,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildMetricTile(
-                  label: 'Jam Rekam',
-                  value: info?.waktuScan ?? '--:--',
-                  valueColor: AppColors.textMain,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildMetricTile(
-                  label: 'Keterlambatan',
-                  value: (info?.lateMinutes ?? 0) > 0 ? '${info!.lateMinutes} mnt' : '0 mnt',
-                  valueColor: (info?.lateMinutes ?? 0) > 0 ? AppColors.warning : AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+          )
+              .animate(onPlay: (c) => c.repeat())
+              .shimmer(duration: 1200.ms, color: const Color(0xFFF2F2F7)),
+          const SizedBox(height: 16),
+          Container(
+            height: 110,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+            ),
+          )
+              .animate(onPlay: (c) => c.repeat())
+              .shimmer(duration: 1200.ms, color: const Color(0xFFF2F2F7)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricTile({
-    required String label,
-    required String value,
-    required Color valueColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: AppColors.textSecondary,
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEBEB),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                CupertinoIcons.exclamationmark_triangle_fill,
+                size: 28,
+                color: Color(0xFFFF3B30),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage ?? 'Terjadi kesalahan sistem',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: const Color(0xFF3C3C43),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            CupertinoButton.filled(
+              onPressed: _loadInitialData,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
       ),
-    );
+    ).animate().fadeIn(duration: 400.ms);
   }
 }
-

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
 import '../models/session_model.dart';
 import '../models/history_model.dart';
+import '../models/dashboard_full_model.dart';
 import 'storage_service.dart';
 
 class ApiResponse<T> {
@@ -75,7 +77,45 @@ class ApiService {
     }
   }
 
-  /// 2. Get Student Profile
+  /// 2. Get Full Dashboard Data (Profile, Active Session, Stats, Classmates, History)
+  static Future<ApiResponse<DashboardFullModel>> getDashboardFull() async {
+    try {
+      final response = await _client.get(
+        Uri.parse(ApiConstants.dashboardFull),
+        headers: _headers(withAuth: true),
+      ).timeout(const Duration(seconds: 12));
+
+      final body = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && body['success'] == true) {
+        final model = DashboardFullModel.fromJson(body);
+        await StorageService.saveUser(model.user);
+        return ApiResponse(
+          success: true,
+          message: 'Data dashboard berhasil dimuat.',
+          data: model,
+        );
+      } else if (response.statusCode == 401) {
+        await StorageService.clear();
+        return ApiResponse(
+          success: false,
+          message: 'Sesi login telah berakhir. Silakan login kembali.',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: body['message'] ?? 'Gagal memuat dashboard.',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi jaringan gagal.',
+      );
+    }
+  }
+
+  /// 3. Get Student Profile
   static Future<ApiResponse<UserModel>> getProfile() async {
     try {
       final response = await _client.get(
@@ -234,6 +274,80 @@ class ApiService {
       return ApiResponse(
         success: false,
         message: 'Koneksi jaringan gagal.',
+      );
+    }
+  }
+
+  /// 6. Update Siswa Profile (Username, Bio, Website, Nama Ortu, No HP Ortu, Avatar, Banner)
+  static Future<ApiResponse<UserModel>> updateProfile({
+    required String username,
+    String? bio,
+    String? website,
+    String? namaOrtu,
+    String? noHpOrtu,
+    XFile? avatarFile,
+    XFile? bannerFile,
+    bool removeAvatar = false,
+    bool removeBanner = false,
+  }) async {
+    try {
+      final token = StorageService.getToken();
+      final uri = Uri.parse('${ApiConstants.baseUrl}/siswa/profile');
+      final request = http.MultipartRequest('POST', uri);
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+
+      request.fields['username'] = username;
+      request.fields['bio'] = bio ?? '';
+      request.fields['website'] = website ?? '';
+      request.fields['nama_ortu'] = namaOrtu ?? '';
+      request.fields['no_hp_ortu'] = noHpOrtu ?? '';
+      if (removeAvatar) request.fields['remove_avatar'] = '1';
+      if (removeBanner) request.fields['remove_banner'] = '1';
+
+      if (avatarFile != null) {
+        final bytes = await avatarFile.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename: avatarFile.name,
+        ));
+      }
+
+      if (bannerFile != null) {
+        final bytes = await bannerFile.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'banner',
+          bytes,
+          filename: bannerFile.name,
+        ));
+      }
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 25));
+      final response = await http.Response.fromStream(streamedResponse);
+      final body = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && body['success'] == true) {
+        final updatedUser = UserModel.fromJson(body['user']);
+        await StorageService.saveUser(updatedUser);
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'Profil berhasil diperbarui!',
+          data: updatedUser,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: body['message'] ?? 'Gagal memperbarui profil.',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal atau ukuran file melebihi batas.',
       );
     }
   }
