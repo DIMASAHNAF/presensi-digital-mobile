@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/api_service.dart';
@@ -164,9 +163,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // NISN Field
+                  // NISN / Username Field
                   Text(
-                    'NISN (Nomor Induk Siswa Nasional)',
+                    'NISN atau Username',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -176,10 +175,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _nisnController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
-                      hintText: 'Contoh: 0092506720',
+                      hintText: 'Contoh: 0092506720 atau username',
                       hintStyle: GoogleFonts.inter(
                         color: AppColors.textMuted,
                         fontSize: 14,
@@ -213,10 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
-                        return 'NISN wajib diisi.';
-                      }
-                      if (val.trim().length < 5) {
-                        return 'NISN tidak valid.';
+                        return 'NISN atau Username wajib diisi.';
                       }
                       return null;
                     },
@@ -236,6 +232,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    keyboardType: _obscurePassword ? TextInputType.text : TextInputType.visiblePassword,
+                    textInputAction: TextInputAction.done,
+                    enableSuggestions: false,
+                    autocorrect: false,
                     decoration: InputDecoration(
                       hintText: 'Masukkan kata sandi akun',
                       hintStyle: GoogleFonts.inter(
