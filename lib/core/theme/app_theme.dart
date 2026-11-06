@@ -46,7 +46,6 @@ class AppTheme {
         primary: AppColors.primaryBlue,
         secondary: AppColors.primaryIndigo,
         surface: AppColors.surface,
-        background: AppColors.background,
         error: AppColors.danger,
       ),
       textTheme: baseTextTheme.copyWith(

@@ -78,3 +78,4 @@ Base URL: `https://presensi.smknegeri1beringin.sch.id/api/v1`
 - `GET /siswa/sesi-aktif` - Ambil data sesi mata pelajaran & polygon geofencing sekolah
 - `POST /siswa/scan-wajah` - Kirim foto wajah & koordinat GPS untuk verifikasi
 - `GET /siswa/riwayat` - Ambil riwayat presensi siswa
+

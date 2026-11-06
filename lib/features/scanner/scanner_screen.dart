@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/session_model.dart';
 import '../../core/services/api_service.dart';
@@ -524,3 +523,4 @@ class FaceScannerOverlayPainter extends CustomPainter {
     return oldDelegate.scanProgress != scanProgress || oldDelegate.isGpsValid != isGpsValid;
   }
 }
+

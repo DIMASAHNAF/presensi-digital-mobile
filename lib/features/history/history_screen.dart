@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/history_model.dart';
 import '../../core/services/api_service.dart';
@@ -17,7 +16,6 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   List<HistoryItem> _historyList = [];
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -28,7 +26,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _fetchHistory() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     final res = await ApiService.getHistory(limit: 50);
@@ -38,8 +35,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _isLoading = false;
       if (res.success && res.data != null) {
         _historyList = res.data!;
-      } else {
-        _errorMessage = res.message;
       }
     });
   }
@@ -304,3 +299,4 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
+
