@@ -26,6 +26,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  int? _hoveredIndex;
   DashboardFullModel? _data;
   GeofenceResult? _geofenceResult;
 
@@ -287,134 +288,158 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  iOS NATIVE TOP BAR
+  //  iOS NATIVE TOP BAR (Apple HIG 2-Row Design - Zero Truncation)
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildIOSHeader() {
     final bool inRadius = _geofenceResult?.isInsideRadius ?? false;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       decoration: const BoxDecoration(
         color: Color(0xFFF2F2F7),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Greeting & Date (Apple Large Title Subtitle)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _getFormattedDate(),
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8E8E93),
-                    letterSpacing: 0.8,
+          // ── Row 1: Brand & Status Pill + Scanner ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Date & School
+              Row(
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.school_rounded,
+                          size: 16,
+                          color: Color(0xFF007AFF),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_getGreeting()}, ${_getFirstName()} 👋',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          // ── GPS Geofence Status Pill ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: inRadius
-                  ? const Color(0xFF34C759).withOpacity(0.12)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: inRadius
-                    ? const Color(0xFF34C759).withOpacity(0.3)
-                    : const Color(0xFFE5E5EA),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: inRadius
-                        ? const Color(0xFF34C759)
-                        : const Color(0xFFFF9500),
-                    shape: BoxShape.circle,
-                    boxShadow: inRadius
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF34C759).withOpacity(0.5),
-                              blurRadius: 6,
-                            ),
-                          ]
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  inRadius ? 'Area Sekolah' : 'Cek Lokasi',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: inRadius
-                        ? const Color(0xFF248A3D)
-                        : const Color(0xFF8E8E93),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // ── Scanner Quick Action Button (Apple Tactile) ──
-          GestureDetector(
-            onTap: _openScanner,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFF007AFF),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF007AFF).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                  const SizedBox(width: 8),
+                  Text(
+                    _getFormattedDate().toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF8E8E93),
+                      letterSpacing: 0.6,
+                    ),
                   ),
                 ],
               ),
-              child: const Icon(
-                CupertinoIcons.viewfinder,
-                color: Colors.white,
-                size: 19,
+
+              // Right Badges
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Live GPS Geofence Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: inRadius
+                          ? const Color(0xFF34C759).withOpacity(0.12)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: inRadius
+                            ? const Color(0xFF34C759).withOpacity(0.3)
+                            : const Color(0xFFD1D1D6),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6.5,
+                          height: 6.5,
+                          decoration: BoxDecoration(
+                            color: inRadius
+                                ? const Color(0xFF34C759)
+                                : const Color(0xFFFF9500),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          inRadius ? 'Area Kampus' : 'Luar Radius',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: inRadius
+                                ? const Color(0xFF248A3D)
+                                : const Color(0xFFFF9500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Scanner Quick Action Button (Apple Tactile)
+                  GestureDetector(
+                    onTap: _openScanner,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF007AFF),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF007AFF).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          CupertinoIcons.camera_fill,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Row 2: Apple Large Title (Full Width - Zero Truncation!) ──
+          Text(
+            '${_getGreeting()}, ${_getFirstName()}',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF000000),
+              letterSpacing: -0.6,
             ),
           ),
         ],
@@ -423,44 +448,138 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  APPLE FROSTED GLASS DOCK (BOTTOM NAVIGATION)
+  //  APPLE macOS ANIMATED NAVIGATION DOCK
+  //  - Feature 1: Apple-Style Sliding Active Box (layoutId spring physics)
+  //  - Feature 2: Sliding Active Dot Indicator (Apple Dock Physics)
+  //  - Feature 3: macOS Dock Hover Proximity Magnification & Tooltips
   // ═══════════════════════════════════════════════════════════
+
+  static const List<({String title, IconData activeIcon, IconData inactiveIcon})>
+      _dockNavItems = [
+    (
+      title: 'Beranda',
+      activeIcon: CupertinoIcons.house_fill,
+      inactiveIcon: CupertinoIcons.house,
+    ),
+    (
+      title: 'Kehadiran',
+      activeIcon: CupertinoIcons.chart_pie_fill,
+      inactiveIcon: CupertinoIcons.chart_pie,
+    ),
+    (
+      title: 'Teman',
+      activeIcon: CupertinoIcons.person_2_fill,
+      inactiveIcon: CupertinoIcons.person_2,
+    ),
+    (
+      title: 'Profil',
+      activeIcon: CupertinoIcons.person_crop_circle_fill,
+      inactiveIcon: CupertinoIcons.person_crop_circle,
+    ),
+  ];
 
   Widget _buildFloatingDock() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
+      borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          height: 68,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(32),
+            color: Colors.white.withOpacity(0.88),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: Colors.white.withOpacity(0.5),
-              width: 1,
+              color: Colors.white.withOpacity(0.85),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withOpacity(0.12),
                 blurRadius: 28,
                 offset: const Offset(0, 10),
               ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildDockItem(0, 'Beranda', CupertinoIcons.house_fill,
-                  CupertinoIcons.house),
-              _buildDockItem(1, 'Kehadiran', CupertinoIcons.chart_pie_fill,
-                  CupertinoIcons.chart_pie),
-              _buildDockItem(2, 'Teman', CupertinoIcons.person_2_fill,
-                  CupertinoIcons.person_2),
-              _buildDockItem(3, 'Profil',
-                  CupertinoIcons.person_crop_circle_fill,
-                  CupertinoIcons.person_crop_circle),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = constraints.maxWidth;
+              const hPadding = 6.0;
+              const vPadding = 6.0;
+              final availableWidth = totalWidth - (hPadding * 2);
+              final itemWidth = availableWidth / _dockNavItems.length;
+              final itemHeight = constraints.maxHeight - (vPadding * 2);
+              final pillLeft = hPadding + (_currentIndex * itemWidth);
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // ── 1. APPLE-STYLE SLIDING ACTIVE BOX (Spring Physics) ──
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutBack,
+                    left: pillLeft + 3.0,
+                    top: vPadding + 2.0,
+                    width: itemWidth - 6.0,
+                    height: itemHeight - 4.0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFFE5E5EA),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── 2. APPLE-STYLE SLIDING ACTIVE DOT (macOS Dock Style) ──
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutBack,
+                    left: pillLeft + (itemWidth / 2) - 2.5,
+                    bottom: vPadding + 2.0,
+                    width: 5,
+                    height: 5,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1C1C1E),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+
+                  // ── 3. DOCK ITEMS (Magnification & Tooltips) ──
+                  Row(
+                    children: List.generate(_dockNavItems.length, (index) {
+                      final item = _dockNavItems[index];
+                      return SizedBox(
+                        width: itemWidth,
+                        height: constraints.maxHeight,
+                        child: _buildDockItem(index, item),
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -478,59 +597,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDockItem(
     int index,
-    String label,
-    IconData activeIcon,
-    IconData inactiveIcon,
+    ({String title, IconData activeIcon, IconData inactiveIcon}) item,
   ) {
     final isActive = _currentIndex == index;
+    final isHovered = _hoveredIndex == index;
 
-    return GestureDetector(
-      onTap: () {
-        if (_currentIndex != index) {
-          HapticFeedback.selectionClick();
-          setState(() => _currentIndex = index);
-        }
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        padding: isActive
-            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 9)
-            : const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF007AFF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF007AFF).withOpacity(0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredIndex = index),
+      onExit: (_) => setState(() => _hoveredIndex = null),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          if (_currentIndex != index) {
+            HapticFeedback.selectionClick();
+            setState(() => _currentIndex = index);
+          }
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
           children: [
-            Icon(
-              isActive ? activeIcon : inactiveIcon,
-              size: 20,
-              color: isActive ? Colors.white : const Color(0xFF8E8E93),
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 7),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -0.2,
+            // Floating Tooltip on Hover (macOS Dock Style)
+            if (isHovered)
+              Positioned(
+                top: -36,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFE5E5EA),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    item.title,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1C1C1E),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
                 ),
               ),
-            ],
+
+            // Scaling Icon & Label (macOS Hover Magnification)
+            AnimatedScale(
+              scale: isHovered ? 1.18 : (isActive ? 1.05 : 1.0),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isActive ? item.activeIcon : item.inactiveIcon,
+                    size: isActive ? 22 : 21,
+                    color: isActive
+                        ? const Color(0xFF1C1C1E)
+                        : const Color(0xFF8E8E93),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      color: isActive
+                          ? const Color(0xFF1C1C1E)
+                          : const Color(0xFF8E8E93),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 5), // Space for sliding active dot
+                ],
+              ),
+            ),
           ],
         ),
       ),

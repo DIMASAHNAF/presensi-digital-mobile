@@ -37,7 +37,7 @@ class ProfilTab extends StatelessWidget {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 110),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

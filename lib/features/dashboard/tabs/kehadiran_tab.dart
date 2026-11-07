@@ -54,7 +54,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 100),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -123,21 +123,49 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Divider(height: 1, color: Color(0xFFF2F2F7)),
-                const SizedBox(height: 14),
+                // ── Apple Activity Segmented Bar (Proportional) ──
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: SizedBox(
+                    height: 7,
+                    child: Row(
+                      children: [
+                        if (stats.hadir > 0)
+                          Expanded(
+                            flex: stats.hadir,
+                            child: Container(color: const Color(0xFF34C759)),
+                          ),
+                        if (stats.izin > 0)
+                          Expanded(
+                            flex: stats.izin,
+                            child: Container(color: const Color(0xFFFF9500)),
+                          ),
+                        if (stats.sakit > 0)
+                          Expanded(
+                            flex: stats.sakit,
+                            child: Container(color: const Color(0xFF5856D6)),
+                          ),
+                        if (stats.alpa > 0)
+                          Expanded(
+                            flex: stats.alpa,
+                            child: Container(color: const Color(0xFFFF3B30)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ── 4 Crisp Apple Metric Columns (NO PASTEL BOXES) ──
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStatPill('Hadir', '${stats.hadir}',
-                        const Color(0xFF34C759), const Color(0xFFE8F8ED)),
-                    const SizedBox(width: 8),
-                    _buildStatPill('Izin', '${stats.izin}',
-                        const Color(0xFFFF9500), const Color(0xFFFFF4E6)),
-                    const SizedBox(width: 8),
-                    _buildStatPill('Sakit', '${stats.sakit}',
-                        const Color(0xFF5856D6), const Color(0xFFF2F1FD)),
-                    const SizedBox(width: 8),
-                    _buildStatPill('Alpa', '${stats.alpa}',
-                        const Color(0xFFFF3B30), const Color(0xFFFFEBEB)),
+                    _buildAppleMetric('Hadir', '${stats.hadir}', const Color(0xFF34C759)),
+                    _buildAppleDivider(),
+                    _buildAppleMetric('Izin', '${stats.izin}', const Color(0xFFFF9500)),
+                    _buildAppleDivider(),
+                    _buildAppleMetric('Sakit', '${stats.sakit}', const Color(0xFF5856D6)),
+                    _buildAppleDivider(),
+                    _buildAppleMetric('Alpa', '${stats.alpa}', const Color(0xFFFF3B30)),
                   ],
                 ),
               ],
@@ -392,37 +420,52 @@ class _KehadiranTabState extends State<KehadiranTab> {
     );
   }
 
-  Widget _buildStatPill(
-      String label, String value, Color color, Color bg) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
+  Widget _buildAppleDivider() {
+    return Container(
+      width: 1,
+      height: 28,
+      color: const Color(0xFFE5E5EA),
+    );
+  }
+
+  Widget _buildAppleMetric(String label, String value, Color dotColor) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: color,
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(width: 5),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: color.withOpacity(0.85),
+                color: const Color(0xFF8E8E93),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF000000),
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
     );
   }
 

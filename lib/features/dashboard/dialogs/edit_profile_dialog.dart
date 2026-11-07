@@ -137,8 +137,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       widget.onProfileUpdated(res.data!);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profil berhasil diperbarui!'),
+        const SnackBar(
+          content: Text('Profil berhasil diperbarui!'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -329,7 +329,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           // ── Footer Action Buttons ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(
                   top: BorderSide(color: AppColors.borderLight, width: 0.5)),
@@ -342,7 +342,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                         _isSaving ? null : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(
+                      side: const BorderSide(
                           color: AppColors.borderLight, width: 1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -507,7 +507,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                               'https://presensi.smknegeri1beringin.sch.id/storage/${widget.user.avatar}',
                               fit: BoxFit.cover,
                             )
-                          : Icon(CupertinoIcons.person_fill,
+                          : const Icon(CupertinoIcons.person_fill,
                               size: 40, color: AppColors.primaryBlue),
                 ),
                 Positioned(
@@ -518,7 +518,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     child: Container(
                       width: 26,
                       height: 26,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.primaryBlue,
                         shape: BoxShape.circle,
                       ),
@@ -577,7 +577,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.lock_fill,
+                    const Icon(CupertinoIcons.lock_fill,
                         size: 10, color: AppColors.warning),
                     const SizedBox(width: 4),
                     Text(
@@ -693,9 +693,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 12),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.background,
-                  borderRadius: const BorderRadius.horizontal(
+                  borderRadius: BorderRadius.horizontal(
                       left: Radius.circular(13)),
                   border: Border(
                       right: BorderSide(color: AppColors.border)),

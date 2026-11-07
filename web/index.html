@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="/mobile/">
+  <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -26,7 +26,7 @@
   <title>Portal Siswa • SMKN 1 Beringin</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Service Worker Killer to prevent stale cached versions -->
+  <!-- Aggressive Service Worker & Cache Killer to force newest iOS experience -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -185,7 +185,7 @@
       <div class="loading-bar-fill"></div>
     </div>
   </div>
-  <div class="splash-footer">Portal Siswa • iOS Experience v2.0</div>
+  <div class="splash-footer">Portal Siswa • Apple Dock Edition v2.0.8</div>
 
   <!-- Remove splash once Flutter first frame renders -->
   <script>
@@ -197,6 +197,6 @@
     });
   </script>
 
-  <script src="flutter_bootstrap.js?v=2.0.3" async></script>
+  <script src="flutter_bootstrap.js?v=2.0.8" async></script>
 </body>
 </html>

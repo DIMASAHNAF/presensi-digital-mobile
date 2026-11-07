@@ -58,7 +58,7 @@ class _TemanTabState extends State<TemanTab> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 100),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
