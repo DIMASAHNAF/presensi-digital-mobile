@@ -14,7 +14,6 @@ import '../../core/services/storage_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/login_screen.dart';
 import '../scanner/scanner_screen.dart';
-import 'dialogs/student_id_fullscreen_dialog.dart';
 import 'dialogs/izin_sakit_dialog.dart';
 import 'dialogs/rekap_kehadiran_dialog.dart';
 import 'tabs/beranda_tab.dart';
@@ -161,12 +160,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         )
         .then((_) => _loadInitialData());
-  }
-
-  void _openStudentCardModal() {
-    if (_data == null) return;
-    HapticFeedback.lightImpact();
-    StudentIdFullscreenDialog.show(context, user: _data!.user);
   }
 
   void _openIzinSakitModal() {
@@ -317,7 +310,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     geofenceResult: _geofenceResult,
                     currentTimeWIB: _currentTimeWIB,
                     onOpenScanner: _openScanner,
-                    onOpenStudentCard: _openStudentCardModal,
                     onOpenIzinSakit: _openIzinSakitModal,
                     onOpenRekap: _openRekapModal,
                     onOpenKehadiran: () => setState(() => _currentIndex = 1),

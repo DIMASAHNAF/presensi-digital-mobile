@@ -22,7 +22,6 @@ class BerandaTab extends StatefulWidget {
   final GeofenceResult? geofenceResult;
   final String currentTimeWIB;
   final VoidCallback onOpenScanner;
-  final VoidCallback onOpenStudentCard;
   final VoidCallback onOpenIzinSakit;
   final VoidCallback onOpenRekap;
   final VoidCallback onOpenKehadiran;
@@ -35,7 +34,6 @@ class BerandaTab extends StatefulWidget {
     required this.geofenceResult,
     required this.currentTimeWIB,
     required this.onOpenScanner,
-    required this.onOpenStudentCard,
     required this.onOpenIzinSakit,
     required this.onOpenRekap,
     required this.onOpenKehadiran,
@@ -550,13 +548,6 @@ class _BerandaTabState extends State<BerandaTab> {
         ),
         const SizedBox(width: 10),
         _buildActionTile(
-          icon: CupertinoIcons.qrcode,
-          label: 'QR ID Siswa',
-          gradientColors: [const Color(0xFF5856D6), const Color(0xFF3634A3)],
-          onTap: widget.onOpenStudentCard,
-        ),
-        const SizedBox(width: 10),
-        _buildActionTile(
           icon: CupertinoIcons.doc_plaintext,
           label: 'Izin / Sakit',
           gradientColors: [const Color(0xFFFF9500), const Color(0xFFCC7700)],
@@ -565,7 +556,7 @@ class _BerandaTabState extends State<BerandaTab> {
         const SizedBox(width: 10),
         _buildActionTile(
           icon: CupertinoIcons.chart_bar_alt_fill,
-          label: 'Rekap',
+          label: 'Rekap Presensi',
           gradientColors: [const Color(0xFF30B0C7), const Color(0xFF008299)],
           onTap: widget.onOpenRekap,
         ),
@@ -1304,75 +1295,7 @@ class _BerandaTabState extends State<BerandaTab> {
                     ),
                   ),
 
-                const SizedBox(height: 14),
-
-                // ── 5. Enterprise NFC / QR Digital Pass Trigger (Shadcn Dark Variant) ──
-                GestureDetector(
-                  onTap: widget.onOpenStudentCard,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A), // Slate 900
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0F172A).withOpacity(0.18),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            CupertinoIcons.qrcode_viewfinder,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'KARTU ID SISWA DIGITAL (QR PASS)',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                              Text(
-                                'Sentuh untuk membuka barcode & verifikasi fisik',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w400,
-                                  color: const Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(
-                          CupertinoIcons.chevron_right,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
               ],
             ),
           ),
