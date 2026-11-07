@@ -23,8 +23,8 @@ import 'tabs/teman_tab.dart';
 import 'tabs/profil_tab.dart';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DASHBOARD SCREEN — Authentic Portal Siswa SMKN 1 Beringin
-//  Top Branding Header • Apple Animated Floating Dock (4 Tabs)
+//  DASHBOARD SCREEN — 100% Authentic Apple iOS 18 Design Language
+//  Apple Large Title Navigation Header • macOS/iOS Floating Glass Dock
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class DashboardScreen extends StatefulWidget {
@@ -67,6 +67,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _currentTimeWIB = '$formatted WIB';
       });
     }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().toUtc().add(const Duration(hours: 7)).hour;
+    if (hour >= 5 && hour < 11) return 'Selamat Pagi';
+    if (hour >= 11 && hour < 15) return 'Selamat Siang';
+    if (hour >= 15 && hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
+
+  String _getFormattedDate() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 7));
+    const days = [
+      'Minggu',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu'
+    ];
+    const months = [
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+    final dayName = days[now.weekday % 7];
+    final monthName = months[now.month];
+    return '${dayName.toUpperCase()}, ${now.day} ${monthName.toUpperCase()} ${now.year}';
+  }
+
+  String _getFirstName() {
+    if (_data == null) return 'Siswa';
+    final parts = _data!.user.nama.trim().split(' ');
+    if (parts.isEmpty) return 'Siswa';
+    final first = parts[0];
+    return first[0].toUpperCase() + first.substring(1).toLowerCase();
   }
 
   Future<void> _loadInitialData() async {
@@ -147,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF1C1C1E),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
@@ -197,11 +244,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
         title: Text(
-          'Keluar dari Aplikasi',
+          'Keluar dari Akun',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Apakah Anda yakin ingin keluar dari akun Presensi SMKN 1 Beringin?',
+          'Apakah Anda yakin ingin keluar dari akun Presensi Siswa?',
           style: GoogleFonts.inter(),
         ),
         actions: [
@@ -231,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Slate 100 canvas
+      backgroundColor: const Color(0xFFF2F2F7), // Authentic Apple iOS System Canvas
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
@@ -257,8 +304,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. Top Navbar Header (Matching Portal Siswa) ──
-            _buildTopBrandHeader(),
+            // ── 1. Apple Native iOS 18 Large Title Header ──
+            _buildIOSHeader(),
 
             // ── 2. Tab Content Body ──
             Expanded(
@@ -290,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
 
-        // ── 3. Apple macOS/iOS Animated Floating Dock (Smooth Spring Physics) ──
+        // ── 3. Apple macOS/iOS Animated Floating Glass Dock ──
         Positioned(
           left: 18,
           right: 18,
@@ -309,130 +356,196 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  TOP NAVBAR HEADER (Matching Web Portal Photo)
+  //  APPLE NATIVE iOS 18 LARGE TITLE HEADER
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildTopBrandHeader() {
+  Widget _buildIOSHeader() {
+    final bool inRadius = _geofenceResult?.isInsideRadius ?? false;
+    final double distance = _geofenceResult?.distanceMeters ?? 0.0;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFFF2F2F7),
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+          bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.8),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // School Logo
-          Image.asset(
-            'assets/images/logo.webp',
-            height: 34,
-            errorBuilder: (_, __, ___) => const Icon(
-              CupertinoIcons.building_2_fill,
-              color: Color(0xFF007AFF),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // School Brand & Portal Siswa
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          // ── Row 1: Subtitle Date & Apple Glass Control Buttons ──
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'SMKN 1 BERINGIN',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF0F172A),
-                  letterSpacing: 0.3,
+              // Date Subtitle
+              Expanded(
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.webp',
+                      height: 18,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        CupertinoIcons.building_2_fill,
+                        size: 14,
+                        color: Color(0xFF007AFF),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _getFormattedDate(),
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF8E8E93),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'Portal Siswa',
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF007AFF),
+
+              // ── Apple Glass Control: Buku Panduan ──
+              GestureDetector(
+                onTap: _showPanduanDialog,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(CupertinoIcons.book_fill, size: 12, color: Color(0xFF007AFF)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Panduan',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF007AFF),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // ── Apple Glass Control: Logout ──
+              GestureDetector(
+                onTap: _confirmLogout,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      CupertinoIcons.square_arrow_right,
+                      size: 13,
+                      color: Color(0xFFFF3B30),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(width: 8),
-          Container(
-            width: 1,
-            height: 22,
-            color: const Color(0xFFE2E8F0),
-          ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 6),
 
-          // Kolaborasi Sumut Berkah Logo
-          Image.asset(
-            'assets/images/logo-kolaborasi.webp',
-            height: 20,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-
-          const Spacer(),
-
-          // ── Actions Right: Panduan, Theme Toggle, Logout ──
-          GestureDetector(
-            onTap: _showPanduanDialog,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+          // ── Row 2: Apple Large Title & GPS Geofence Pill ──
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  '${_getGreeting()}, ${_getFirstName()} 👋',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF000000),
+                    letterSpacing: -0.6,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              child: const Icon(
-                CupertinoIcons.book_fill,
-                size: 15,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
 
-          // Theme Indicator Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(CupertinoIcons.sun_max_fill, size: 14, color: Color(0xFFF59E0B)),
-                SizedBox(width: 3),
-                Icon(CupertinoIcons.moon_fill, size: 13, color: Color(0xFF94A3B8)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // Logout Button
-          GestureDetector(
-            onTap: _confirmLogout,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+              // ── GPS Geofence Status Pill ──
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: inRadius
+                      ? const Color(0xFF34C759).withOpacity(0.12)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: inRadius
+                        ? const Color(0xFF34C759).withOpacity(0.3)
+                        : const Color(0xFFE5E5EA),
+                    width: 0.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: inRadius
+                            ? const Color(0xFF34C759)
+                            : const Color(0xFFFF9500),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      inRadius
+                          ? 'Radius Valid (${distance.toStringAsFixed(0)}m)'
+                          : 'Cek Lokasi GPS',
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: inRadius
+                            ? const Color(0xFF34C759)
+                            : const Color(0xFF8E8E93),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Icon(
-                CupertinoIcons.square_arrow_right,
-                size: 15,
-                color: Color(0xFFEF4444),
-              ),
-            ),
+            ],
           ),
         ],
       ),
@@ -440,10 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  APPLE macOS/iOS ANIMATED FLOATING DOCK
-  //  - Feature 1: Apple-Style Sliding Active Box (Spring Physics)
-  //  - Feature 2: Sliding Active Dot Indicator (macOS Dock Physics)
-  //  - Feature 3: macOS Dock Hover Proximity Magnification & Tooltips
+  //  APPLE macOS/iOS ANIMATED FLOATING GLASS DOCK
   // ═══════════════════════════════════════════════════════════
 
   static const List<({String title, IconData activeIcon, IconData inactiveIcon})>
