@@ -77,6 +77,21 @@ class _BerandaTabState extends State<BerandaTab> {
     }
   }
 
+  void _showToast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: const Color(0xFF0F172A),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = widget.data.user;
@@ -628,41 +643,51 @@ class _BerandaTabState extends State<BerandaTab> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  3. DIGITAL STUDENT ID PASS (APPLE WALLET STYLE)
+  //  3. ENTERPRISE PROFILE CARD (ANTI-AI SLOP / SHADCN / LINEAR)
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildDigitalStudentPass(UserModel user, StatsModel stats) {
     final hasBanner = user.banner != null && user.banner!.isNotEmpty;
     final hasWebsite = user.website != null && user.website!.isNotEmpty;
     final websiteUrl = hasWebsite ? user.website! : 'dimas.tiksmkn1beringin.my.id';
+    final hasBio = user.bio != null && user.bio!.trim().isNotEmpty;
+
+    // Detect Department from Class Name
+    final String jurusanLabel = user.kelas.toUpperCase().contains('PPLG')
+        ? 'Pengembangan Perangkat Lunak & Gim'
+        : user.kelas.toUpperCase().contains('TJKT')
+            ? 'Teknik Jaringan Komputer & Telekomunikasi'
+            : user.kelas.toUpperCase().contains('DKV')
+                ? 'Desain Komunikasi Visual'
+                : 'Siswa SMK Negeri 1 Beringin';
 
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Cover Banner Header with Glass Badges ──
+          // ── 1. Hero Cover Banner with Live Badges ──
           Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                height: 100,
+                height: 104,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -675,22 +700,23 @@ class _BerandaTabState extends State<BerandaTab> {
                       )
                     : null,
               ),
+              // Subtle gradient overlay for readability
               Container(
-                height: 100,
+                height: 104,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.4),
+                      Colors.black.withOpacity(0.45),
                       Colors.transparent,
-                      Colors.black.withOpacity(0.5),
+                      Colors.black.withOpacity(0.55),
                     ],
                   ),
                 ),
               ),
 
-              // Top Bar over Cover: Face ID Pill & Edit Profile Pill
+              // Top Controls Over Cover: Live Face ID Capsule & Edit Profile Pill
               Positioned(
                 top: 10,
                 left: 14,
@@ -698,48 +724,56 @@ class _BerandaTabState extends State<BerandaTab> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Face ID Aktif Glass Capsule
+                    // Live Face ID Capsule
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
+                        color: const Color(0xFF0F172A).withOpacity(0.65),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withOpacity(0.18)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 6,
-                            height: 6,
+                            width: 6.5,
+                            height: 6.5,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF34C759),
+                              color: Color(0xFF10B981), // Emerald
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF10B981),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 6),
                           Text(
                             'Face ID Aktif • ${widget.currentTimeWIB.isNotEmpty ? widget.currentTimeWIB : "WIB"}',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    // Edit Profil Button
+                    // Edit Profile Trigger
                     GestureDetector(
                       onTap: _openEditProfile,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
+                          color: const Color(0xFF0F172A).withOpacity(0.65),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.25)),
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -762,22 +796,23 @@ class _BerandaTabState extends State<BerandaTab> {
                 ),
               ),
 
-              // Floating Avatar + Kehadiran Badge
+              // Floating High-Precision Avatar
               Positioned(
-                bottom: -28,
+                bottom: -32,
                 left: 18,
                 child: Stack(
                   children: [
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 68,
+                      height: 68,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
+                        color: Colors.white,
+                        border: Border.all(color: Colors.white, width: 3.5),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 10,
+                            color: Colors.black.withOpacity(0.14),
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                         ],
@@ -796,21 +831,21 @@ class _BerandaTabState extends State<BerandaTab> {
                       bottom: 2,
                       right: 2,
                       child: Container(
-                        width: 18,
-                        height: 18,
+                        width: 20,
+                        height: 20,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF34C759),
+                          color: const Color(0xFF10B981),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: Colors.white, width: 2.2),
                         ),
-                        child: const Icon(Icons.check, size: 10, color: Colors.white),
+                        child: const Icon(Icons.check, size: 11, color: Colors.white),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // Kehadiran 75% Badge on Right
+              // Kehadiran Rate Badge (Top Right of Card Bottom)
               Positioned(
                 bottom: 8,
                 right: 14,
@@ -818,14 +853,15 @@ class _BerandaTabState extends State<BerandaTab> {
                   onTap: widget.onOpenKehadiran,
                   behavior: HitTestBehavior.opaque,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5.5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.92),
+                      color: Colors.white.withOpacity(0.95),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -838,19 +874,20 @@ class _BerandaTabState extends State<BerandaTab> {
                           style: GoogleFonts.inter(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF8E8E93),
+                            color: const Color(0xFF64748B),
+                            letterSpacing: 0.5,
                           ),
                         ),
                         Text(
                           '${stats.persentase.toStringAsFixed(0)}%',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF34C759),
+                            color: const Color(0xFF10B981),
                           ),
                         ),
-                        const SizedBox(width: 2),
-                        const Icon(CupertinoIcons.chevron_right, size: 11, color: Color(0xFF8E8E93)),
+                        const SizedBox(width: 3),
+                        const Icon(CupertinoIcons.chevron_right, size: 11, color: Color(0xFF94A3B8)),
                       ],
                     ),
                   ),
@@ -859,245 +896,482 @@ class _BerandaTabState extends State<BerandaTab> {
             ],
           ),
 
-          const SizedBox(height: 34),
+          const SizedBox(height: 38),
 
-          // ── Student Identity Info ──
+          // ── 2. Student Identity Header ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Student Full Name + Verified Seal
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Flexible(
                       child: Text(
                         user.nama.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 17,
+                          fontSize: 17.5,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF0F172A),
-                          letterSpacing: -0.3,
+                          letterSpacing: -0.4,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.verified, size: 17, color: Color(0xFF007AFF)),
+                    const Icon(Icons.verified, size: 18, color: Color(0xFF007AFF)),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '@${user.username} • SMKN 1 Beringin',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 4),
 
-                // Clickable Website Link
+                const SizedBox(height: 6),
+
+                // Tags Row: Username Badge + School Badge + Active Status
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Username Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Text(
+                        '@${user.username}',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+
+                    // School Tag
+                    Text(
+                      'SMKN 1 Beringin',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+
+                    // Active Student Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4.5),
+                          Text(
+                            'Siswa Aktif',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF047857),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // Interactive Website Pill (Shadcn Badge Button)
                 GestureDetector(
                   onTap: () => _launchWebsite(websiteUrl),
                   behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(CupertinoIcons.globe, size: 12.5, color: Color(0xFF007AFF)),
+                        const SizedBox(width: 5),
+                        Text(
+                          websiteUrl,
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF007AFF),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(CupertinoIcons.arrow_up_right, size: 9.5, color: Color(0xFF94A3B8)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── 3. ENTERPRISE SPEC SHEET: KELAS & NISN (Anti-AI Slop) ──
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                  ),
+                  child: Column(
                     children: [
-                      const Icon(CupertinoIcons.link, size: 12, color: Color(0xFF007AFF)),
-                      const SizedBox(width: 4),
-                      Text(
-                        websiteUrl,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF007AFF),
+                      // Header Row: Dapodik Verified Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(15),
+                            topRight: Radius.circular(15),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  CupertinoIcons.shield_lefthalf_fill,
+                                  size: 12,
+                                  color: Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'DATA AKADEMIK & IDENTITAS SISWA',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF64748B),
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFCBD5E1)),
+                              ),
+                              child: Text(
+                                'DAPODIK',
+                                style: GoogleFonts.jetBrainsMono(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Two-Column Precision Specs
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // ── Column 1: KELAS & JURUSAN ──
+                            Expanded(
+                              flex: 11,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'KELAS & ROMBEL',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF94A3B8),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      user.kelas,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: const Color(0xFF0F172A),
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      jurusanLabel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF007AFF),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Delicate Hairline Vertical Divider
+                            Container(
+                              width: 1,
+                              color: const Color(0xFFE2E8F0),
+                            ),
+
+                            // ── Column 2: NISN NASIONAL & COPY ACTION ──
+                            Expanded(
+                              flex: 10,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'NISN NASIONAL',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF94A3B8),
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        // 1-Tap Copy Action
+                                        GestureDetector(
+                                          onTap: () {
+                                            Clipboard.setData(ClipboardData(text: user.nisn));
+                                            HapticFeedback.mediumImpact();
+                                            _showToast('NISN ${user.nisn} disalin ke clipboard');
+                                          },
+                                          behavior: HitTestBehavior.opaque,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(CupertinoIcons.doc_on_doc, size: 9, color: Color(0xFF475569)),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  'Salin',
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(0xFF475569),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      user.nisn,
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.0,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'ID Siswa Kemendikbud',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // ── Apple Wallet Metadata Bento Cards: KELAS & NISN ──
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF007AFF).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(CupertinoIcons.building_2_fill, size: 16, color: Color(0xFF007AFF)),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'KELAS',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF94A3B8),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    user.kelas,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF0F172A),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5856D6).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(CupertinoIcons.creditcard_fill, size: 16, color: Color(0xFF5856D6)),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'NISN',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF94A3B8),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    user.nisn,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF0F172A),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
 
                 const SizedBox(height: 12),
 
-                // Callout Bio & Atur
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Lengkapi bio profil & tautan sosial media kamu!',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
+                // ── 4. Bio Section / Linear Empty State Prompt ──
+                if (hasBio)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: const Border(
+                        left: BorderSide(color: Color(0xFF007AFF), width: 3),
                       ),
-                      GestureDetector(
-                        onTap: _openEditProfile,
-                        behavior: HitTestBehavior.opaque,
-                        child: Text(
-                          'Atur →',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF007AFF),
-                          ),
-                        ),
+                    ),
+                    child: Text(
+                      user.bio!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: const Color(0xFF334155),
+                        height: 1.35,
                       ),
-                    ],
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: _openEditProfile,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            CupertinoIcons.sparkles,
+                            size: 14,
+                            color: Color(0xFF6366F1), // Indigo
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Bio & media sosial belum diisi',
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                'Lengkapi Profil',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF007AFF),
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              const Icon(CupertinoIcons.arrow_up_right, size: 10, color: Color(0xFF007AFF)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
 
                 const SizedBox(height: 14),
 
-                // Apple Wallet QR Pass Button
+                // ── 5. Enterprise NFC / QR Digital Pass Trigger (Shadcn Dark Variant) ──
                 GestureDetector(
                   onTap: widget.onOpenStudentCard,
                   behavior: HitTestBehavior.opaque,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF0F172A), // Slate 900
+                      borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 10,
+                          color: const Color(0xFF0F172A).withOpacity(0.18),
+                          blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(CupertinoIcons.qrcode, color: Colors.white, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Buka Kartu ID Pelajar Digital (QR)',
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
+                          child: const Icon(
+                            CupertinoIcons.qrcode_viewfinder,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'KARTU ID SISWA DIGITAL (QR PASS)',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              Text(
+                                'Sentuh untuk membuka barcode & verifikasi fisik',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          CupertinoIcons.chevron_right,
+                          color: Colors.white,
+                          size: 14,
                         ),
                       ],
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
               ],
             ),
