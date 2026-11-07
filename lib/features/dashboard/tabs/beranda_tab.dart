@@ -1,26 +1,30 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/models/session_model.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/location_service.dart';
 import '../dialogs/edit_profile_dialog.dart';
 import '../dialogs/classmate_detail_dialog.dart';
+import '../widgets/jadwal_pelajaran_widget.dart';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BERANDA TAB — 100% Authentic Apple iOS 18 HIG Design System
-//  Hero Student Pass • Apple Dynamic Island • Activity Rings
+//  BERANDA TAB — 100% Authentic SMKN 1 Beringin Portal Siswa
+//  Banner & Avatar Hero Card • PWA Install • Radar • Stories
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class BerandaTab extends StatefulWidget {
   final DashboardFullModel data;
   final GeofenceResult? geofenceResult;
+  final String currentTimeWIB;
   final VoidCallback onOpenScanner;
+  final VoidCallback onOpenStudentCard;
+  final VoidCallback onOpenIzinSakit;
+  final VoidCallback onOpenRekap;
   final VoidCallback onOpenKehadiran;
   final VoidCallback onOpenTeman;
   final ValueChanged<UserModel> onProfileUpdated;
@@ -29,7 +33,11 @@ class BerandaTab extends StatefulWidget {
     super.key,
     required this.data,
     required this.geofenceResult,
+    required this.currentTimeWIB,
     required this.onOpenScanner,
+    required this.onOpenStudentCard,
+    required this.onOpenIzinSakit,
+    required this.onOpenRekap,
     required this.onOpenKehadiran,
     required this.onOpenTeman,
     required this.onProfileUpdated,
@@ -43,12 +51,29 @@ class _BerandaTabState extends State<BerandaTab> {
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
 
+  bool _isPwaDismissed = false;
+
   void _openEditProfile() {
     HapticFeedback.lightImpact();
     EditProfileDialog.show(
       context,
       user: widget.data.user,
       onProfileUpdated: widget.onProfileUpdated,
+    );
+  }
+
+  void _triggerInstall() {
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Mengunduh APK Android resmi SMKN 1 Beringin...',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: const Color(0xFF007AFF),
+      ),
     );
   }
 
@@ -65,170 +90,170 @@ class _BerandaTabState extends State<BerandaTab> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 140),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          //  1. HERO: DIGITAL STUDENT PASS (APPLE WALLET / HIG PASS)
+          //  1. HERO: COVER BANNER & FLOATING AVATAR PROFILE CARD
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          _buildDigitalStudentPass(user, stats)
+          _buildHeroProfileCard(user, stats)
               .animate()
-              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-              .slideY(
-                begin: 0.04,
-                end: 0,
-                duration: 400.ms,
-                curve: Curves.easeOutCubic,
-              ),
+              .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.03, end: 0, duration: 350.ms, curve: Curves.easeOutCubic),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          //  2. APPLE LIVE ACTIVITY / DYNAMIC ISLAND PRESENSI
+          //  2. PWA / APK INSTALL BANNER (MATCHING PHOTO)
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          if (!_isPwaDismissed)
+            _buildPwaInstallBanner()
+                .animate()
+                .fadeIn(duration: 350.ms, delay: 50.ms, curve: Curves.easeOutCubic),
+
+          if (!_isPwaDismissed) const SizedBox(height: 14),
+
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          //  3. STUDENT QUICK ACTIONS (AKSI CEPAT)
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          _buildStudentQuickActions()
+              .animate()
+              .fadeIn(duration: 350.ms, delay: 80.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.03, end: 0, duration: 350.ms, delay: 80.ms, curve: Curves.easeOutCubic),
+
+          const SizedBox(height: 14),
+
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          //  4. SESI PRESENSI AKTIF (RADAR & SCAN UTAMA)
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           if (hasSesi && sesi != null)
-            _buildLiveActivityCard(sesi, sudahHadir)
+            _buildActiveSessionCard(sesi, sudahHadir)
                 .animate()
-                .fadeIn(duration: 400.ms, delay: 100.ms, curve: Curves.easeOutCubic)
-                .scale(
-                  begin: const Offset(0.97, 0.97),
-                  end: const Offset(1, 1),
-                  duration: 450.ms,
-                  delay: 100.ms,
-                  curve: Curves.easeOutBack,
-                )
+                .fadeIn(duration: 350.ms, delay: 120.ms, curve: Curves.easeOutCubic)
+                .slideY(begin: 0.03, end: 0, duration: 350.ms, delay: 120.ms, curve: Curves.easeOutCubic)
           else
             _buildNoSessionCard()
                 .animate()
-                .fadeIn(duration: 400.ms, delay: 100.ms),
+                .fadeIn(duration: 350.ms, delay: 120.ms),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          //  3. APPLE HEALTH / ACTIVITY RING STATS (NO AI SLOP)
+          //  5. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW)
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          _buildAppleHealthRingCard(stats)
+          _buildClassmatesStoryRow(classmates, user)
               .animate()
-              .fadeIn(duration: 400.ms, delay: 180.ms, curve: Curves.easeOutCubic)
-              .slideY(
-                begin: 0.04,
-                end: 0,
-                duration: 400.ms,
-                delay: 180.ms,
-                curve: Curves.easeOutCubic,
-              ),
+              .fadeIn(duration: 350.ms, delay: 160.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.03, end: 0, duration: 350.ms, delay: 160.ms, curve: Curves.easeOutCubic),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
 
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          //  4. CLASSMATES STRIP (APPLE CONTACTS STYLE)
+          //  6. JADWAL PELAJARAN HARI INI (TIMETABLE)
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          _buildClassmatesStrip(classmates, user)
+          JadwalPelajaranWidget(
+            activeSession: sesi,
+            namaKelas: user.kelas,
+          )
               .animate()
-              .fadeIn(duration: 400.ms, delay: 240.ms, curve: Curves.easeOutCubic)
-              .slideY(
-                begin: 0.04,
-                end: 0,
-                duration: 400.ms,
-                delay: 240.ms,
-                curve: Curves.easeOutCubic,
-              ),
+              .fadeIn(duration: 350.ms, delay: 200.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.03, end: 0, duration: 350.ms, delay: 200.ms, curve: Curves.easeOutCubic),
         ],
       ),
     );
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  1. HERO: DIGITAL STUDENT PASS (APPLE WALLET HIG)
+  //  1. HERO CARD: COVER BANNER & FLOATING AVATAR (PHOTO MATCH)
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildDigitalStudentPass(UserModel user, StatsModel stats) {
-    final hasBanner = user.banner != null && user.banner!.isNotEmpty;
-    final rate = stats.persentase.clamp(0.0, 100.0);
+  Widget _buildHeroProfileCard(UserModel user, StatsModel stats) {
+    final initials = (user.nama.trim().isNotEmpty)
+        ? user.nama.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+        : 'SW';
+
+    final bannerUrl = user.banner != null && user.banner!.isNotEmpty
+        ? (user.banner!.startsWith('http') ? user.banner! : '$_storageBase${user.banner}')
+        : null;
+
+    final avatarUrl = user.avatar != null && user.avatar!.isNotEmpty
+        ? (user.avatar!.startsWith('http') ? user.avatar! : '$_storageBase${user.avatar}')
+        : null;
 
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 18,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Cover Banner Header ──
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SizedBox(
-                height: 116,
-                width: double.infinity,
-                child: hasBanner
-                    ? Image.network(
-                        '$_storageBase${user.banner}',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildBannerFallback(),
-                      )
-                    : _buildBannerFallback(),
-              ),
-              Container(
-                height: 116,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.55),
-                      Colors.black.withOpacity(0.1),
-                      Colors.black.withOpacity(0.65),
-                    ],
-                  ),
-                ),
-              ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── A. Cover Banner Image ──
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (bannerUrl != null)
+                    CachedNetworkImage(
+                      imageUrl: bannerUrl,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _buildDefaultBannerPattern(),
+                    )
+                  else
+                    _buildDefaultBannerPattern(),
 
-              // Status Bar on Banner (Face ID + Clock)
-              Positioned(
-                top: 12,
-                left: 14,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  // Dark subtle gradient overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.15),
+                          Colors.black.withOpacity(0.55),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Top-Left Status Bar on Banner
+                  Positioned(
+                    top: 10,
+                    left: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
+                        color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.25), width: 0.8),
+                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 6.5,
-                            height: 6.5,
-                            decoration: BoxDecoration(
-                              color: user.isFaceEnrolled
-                                  ? const Color(0xFF34C759)
-                                  : const Color(0xFFFF9500),
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 6),
                           Text(
-                            user.isFaceEnrolled
-                                ? 'Face ID Aktif'
-                                : 'Belum Rekam Wajah',
+                            user.isFaceEnrolled ? 'Face ID Aktif' : 'Belum Rekam Wajah',
                             style: GoogleFonts.inter(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
@@ -237,51 +262,48 @@ class _BerandaTabState extends State<BerandaTab> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            '•  ${DateFormat('HH:mm').format(DateTime.now())} WIB',
+                            '•',
+                            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            widget.currentTimeWIB,
                             style: GoogleFonts.inter(
                               fontSize: 10.5,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withOpacity(0.85),
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              // Edit Profile Button on Banner
-              Positioned(
-                top: 12,
-                right: 14,
-                child: GestureDetector(
-                  onTap: _openEditProfile,
-                  behavior: HitTestBehavior.opaque,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  // Top-Right Edit Profil Button
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: GestureDetector(
+                      onTap: _openEditProfile,
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.25), width: 0.8),
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              CupertinoIcons.pencil,
+                              CupertinoIcons.pencil_ellipsis_rectangle,
                               size: 13,
                               color: Colors.white,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 5),
                             Text(
-                              'Edit',
+                              'Edit Profil',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -293,308 +315,578 @@ class _BerandaTabState extends State<BerandaTab> {
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
 
-          // ── Profile Body with Overlapping Avatar ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Avatar + Kehadiran Row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Floating Avatar overlapping banner
-                    Transform.translate(
-                      offset: const Offset(0, -32),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.12),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: (user.avatar != null &&
-                                      user.avatar!.isNotEmpty)
-                                  ? Image.network(
-                                      '$_storageBase${user.avatar}',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          _buildAvatarFallback(user),
-                                    )
-                                  : _buildAvatarFallback(user),
-                            ),
+            // ── B. Floating Avatar & Attendance Badge Row ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Floating Avatar with Green Checkmark
+                  Transform.translate(
+                    offset: const Offset(0, -32),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          if (user.isFaceEnrolled)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF34C759),
-                                  shape: BoxShape.circle,
-                                  border:
-                                      Border.all(color: Colors.white, width: 2.5),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.check_rounded,
-                                    color: Colors.white,
-                                    size: 14,
-                                  ),
+                          child: ClipOval(
+                            child: avatarUrl != null
+                                ? CachedNetworkImage(
+                                    imageUrl: avatarUrl,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => _buildInitialsAvatar(initials),
+                                  )
+                                : _buildInitialsAvatar(initials),
+                          ),
+                        ),
+
+                        // Green verified checkmark badge on avatar
+                        if (user.isFaceEnrolled)
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2.0),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.check,
+                                  size: 13,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
+                  ),
 
-                    // Kehadiran Pill (Matching User's Original HIG screen)
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        widget.onOpenKehadiran();
-                      },
+                  // Top-Right Floating Attendance Percentage Badge
+                  Transform.translate(
+                    offset: const Offset(0, -18),
+                    child: GestureDetector(
+                      onTap: widget.onOpenKehadiran,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 7),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF2F2F7),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE5E5EA)),
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFBBF7D0), width: 1.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   'KEHADIRAN',
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF8E8E93),
                                     letterSpacing: 0.5,
+                                    color: const Color(0xFF15803D),
                                   ),
                                 ),
-                                Text(
-                                  '${rate.toStringAsFixed(0)}%',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF34C759),
-                                  ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  CupertinoIcons.checkmark_circle_fill,
+                                  size: 11,
+                                  color: Color(0xFF10B981),
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              CupertinoIcons.chevron_right,
-                              size: 14,
-                              color: Color(0xFF34C759),
+                            const SizedBox(height: 1),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${stats.persentase}%',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF10B981),
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                const Icon(
+                                  CupertinoIcons.chevron_right,
+                                  size: 13,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── C. Student Name & Verified Seal ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          user.nama.toUpperCase(),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        CupertinoIcons.checkmark_seal_fill,
+                        color: Color(0xFF007AFF),
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+
+                  // Subtitle: @username • SMKN 1 Beringin
+                  Text(
+                    '@${user.username} • SMKN 1 Beringin',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+
+                  // Website Link
+                  if (user.website != null && user.website!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.link,
+                          size: 13,
+                          color: Color(0xFF007AFF),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          user.website!,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF007AFF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  // Bio Text
+                  if (user.bio != null && user.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      user.bio!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: const Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
+
+                  // ── Two Info Cards: KELAS & NISN (Matching Photo) ──
+                  Row(
+                    children: [
+                      // Card KELAS
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEBF5FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  CupertinoIcons.building_2_fill,
+                                  color: Color(0xFF007AFF),
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'KELAS',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF94A3B8),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      user.kelas,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      // Card NISN
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEBF5FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  CupertinoIcons.creditcard_fill,
+                                  color: Color(0xFF007AFF),
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'NISN',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF94A3B8),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      user.nisn.isNotEmpty ? user.nisn : '-',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── D. Callout Bar on Card Bottom (Matching Photo) ──
+            if (user.bio == null || user.bio!.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  border: Border(
+                    top: BorderSide(color: Color(0xFFF1F5F9), width: 1.0),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Lengkapi bio profil & tautan sosial media kamu!',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _openEditProfile,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
+                        'Atur →',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF007AFF),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                // Name & Verified Badge
+  Widget _buildDefaultBannerPattern() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1E293B),
+            Color(0xFF0F172A),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          CupertinoIcons.waveform_path,
+          color: Colors.white.withOpacity(0.08),
+          size: 60,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitialsAvatar(String initials) {
+    return Container(
+      color: const Color(0xFF007AFF),
+      child: Center(
+        child: Text(
+          initials,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  2. PWA / APK INSTALL BANNER (MATCHING PHOTO)
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildPwaInstallBanner() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Phone Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEBF5FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFBFDBFE), width: 0.8),
+            ),
+            child: const Icon(
+              CupertinoIcons.device_phone_portrait,
+              color: Color(0xFF007AFF),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Titles
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Row(
                   children: [
                     Flexible(
                       child: Text(
-                        user.nama,
+                        'Pasang Aplikasi di Layar HP',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF000000),
-                          letterSpacing: -0.4,
+                          color: const Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      CupertinoIcons.checkmark_seal_fill,
-                      color: Color(0xFF007AFF),
-                      size: 18,
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFCBD5E1), width: 0.6),
+                      ),
+                      child: Text(
+                        'APK / PWA',
+                        style: GoogleFonts.inter(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF475569),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 3),
-
-                // Handle & School
+                const SizedBox(height: 2),
                 Text(
-                  '@${user.username} • SMK Negeri 1 Beringin',
+                  'Lebih cepat & praktis tanpa buka browser setiap hari',
                   style: GoogleFonts.inter(
-                    fontSize: 12.5,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8E8E93),
+                    color: const Color(0xFF64748B),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ],
+            ),
+          ),
 
-                // Website / Social Pill (Safari Style)
-                if (user.website != null && user.website!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => HapticFeedback.selectionClick(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF007AFF).withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            CupertinoIcons.compass,
-                            size: 14,
-                            color: Color(0xFF007AFF),
-                          ),
-                          const SizedBox(width: 5),
-                          Flexible(
-                            child: Text(
-                              user.website!,
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF007AFF),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+          const SizedBox(width: 8),
+
+          // Download / Install Button
+          GestureDetector(
+            onTap: _triggerInstall,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFF007AFF),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF007AFF).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    CupertinoIcons.arrow_down_to_line,
+                    size: 13,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Pasang',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
 
-                const SizedBox(height: 12),
+          const SizedBox(width: 6),
 
-                // 2 Bento Info Cards: KELAS & NISN (Apple Inset Style)
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF2F2F7),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              CupertinoIcons.book_fill,
-                              size: 16,
-                              color: Color(0xFF007AFF),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'KELAS',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF8E8E93),
-                                    ),
-                                  ),
-                                  Text(
-                                    user.kelas,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF000000),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF2F2F7),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              CupertinoIcons.person_badge_plus_fill,
-                              size: 16,
-                              color: Color(0xFF5856D6),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'NISN',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF8E8E93),
-                                    ),
-                                  ),
-                                  Text(
-                                    user.nisn,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF000000),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          // Dismiss Button (X)
+          GestureDetector(
+            onTap: () => setState(() => _isPwaDismissed = true),
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.all(4.0),
+              child: Icon(
+                CupertinoIcons.xmark,
+                size: 14,
+                color: Color(0xFF94A3B8),
+              ),
             ),
           ),
         ],
@@ -602,98 +894,151 @@ class _BerandaTabState extends State<BerandaTab> {
     );
   }
 
-  Widget _buildBannerFallback() {
+  // ═══════════════════════════════════════════════════════════
+  //  3. STUDENT QUICK ACTIONS ROW
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildStudentQuickActions() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildQuickActionBtn(
+            icon: CupertinoIcons.viewfinder,
+            label: 'Scan Wajah',
+            color: const Color(0xFF007AFF),
+            onTap: widget.onOpenScanner,
+          ),
+          _buildQuickActionBtn(
+            icon: CupertinoIcons.qrcode,
+            label: 'QR ID Siswa',
+            color: const Color(0xFF10B981),
+            onTap: widget.onOpenStudentCard,
+          ),
+          _buildQuickActionBtn(
+            icon: CupertinoIcons.doc_text,
+            label: 'Izin / Sakit',
+            color: const Color(0xFFF59E0B),
+            onTap: widget.onOpenIzinSakit,
+          ),
+          _buildQuickActionBtn(
+            icon: CupertinoIcons.chart_bar_alt_fill,
+            label: 'Rekap Presensi',
+            color: const Color(0xFF8B5CF6),
+            onTap: widget.onOpenRekap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 21),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF334155),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  2. APPLE LIVE ACTIVITY / DYNAMIC ISLAND PRESENSI
+  //  4. SESI PRESENSI AKTIF (RADAR & SCAN UTAMA)
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildLiveActivityCard(SessionDetail sesi, bool sudahHadir) {
+  Widget _buildActiveSessionCard(SessionDetail sesi, bool sudahHadir) {
     final inRadius = widget.geofenceResult?.isInsideRadius ?? false;
     final distance = widget.geofenceResult?.distanceMeters ?? 0.0;
 
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF0C1017),
-            Color(0xFF131A26),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(26),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withOpacity(0.12),
-          width: 1,
+          color: sudahHadir ? const Color(0xFFBBF7D0) : const Color(0xFFE2E8F0),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: const Color(0xFF007AFF).withOpacity(0.12),
-            blurRadius: 32,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top Row: Status Radar & Sesi ──
+          // Header Badge & Time
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Pulsing live capsule
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF34C759).withOpacity(0.3),
-                  ),
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Radar pulse dot
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 6,
+                      height: 6,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF34C759),
+                        color: Color(0xFF10B981),
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF34C759),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Text(
                       'SESI SEDANG BERLANGSUNG',
                       style: GoogleFonts.inter(
-                        fontSize: 10.5,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF34C759),
+                        color: const Color(0xFF15803D),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -701,92 +1046,61 @@ class _BerandaTabState extends State<BerandaTab> {
                 ),
               ),
 
-              // Time badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 13,
-                      color: Color(0xFF8E8E93),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${sesi.jamMulai} - ${sesi.jamSelesai} WIB',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFC7C7CC),
-                      ),
-                    ),
-                  ],
+              Text(
+                '${sesi.jamKeLabel} • ${sesi.jadwalJam} WIB',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // ── Middle: Class & Subject Name ──
+          // Class Name & Teacher
           Text(
-            sesi.namaKelas,
+            sesi.kelasNama,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.6,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF0F172A),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
-            sesi.keterangan.isNotEmpty
-                ? sesi.keterangan
-                : 'Presensi Kehadiran Siswa SMKN 1 Beringin',
+            sesi.guruNama.isNotEmpty ? 'Guru: ${sesi.guruNama}' : 'Presensi Pembelajaran',
             style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF8E8E93),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          // ── Action / Status Area ──
+          // Attendance Status Box
           if (sudahHadir)
-            // Apple Success Confirmation Pill
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF34C759).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF34C759).withOpacity(0.35),
-                ),
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF34C759),
+                      color: Color(0xFF10B981),
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
+                    child: const Icon(Icons.check, color: Colors.white, size: 18),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -794,18 +1108,16 @@ class _BerandaTabState extends State<BerandaTab> {
                         Text(
                           'Presensi Terverifikasi',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF15803D),
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
                           'Kehadiran Anda sudah tercatat pada sesi ini.',
                           style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF34C759),
+                            fontSize: 11,
+                            color: const Color(0xFF166534),
                           ),
                         ),
                       ],
@@ -814,86 +1126,71 @@ class _BerandaTabState extends State<BerandaTab> {
                 ],
               ),
             )
-          else
-            // Apple Tactile Action Button: Scan Wajah Sekarang
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                widget.onOpenScanner();
-              },
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF007AFF),
-                      Color(0xFF5856D6),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF007AFF).withOpacity(0.4),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+          else ...[
+            // GPS Radar Indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: inRadius ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: inRadius ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Presensi Wajah Sekarang',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -0.2,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    inRadius ? CupertinoIcons.location_fill : CupertinoIcons.location_slash_fill,
+                    size: 14,
+                    color: inRadius ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      inRadius
+                          ? 'Radius GPS valid • Berada di area sekolah (${distance.toStringAsFixed(0)}m)'
+                          : 'Di luar area presensi (${distance.toStringAsFixed(0)}m, batas 110m)',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: inRadius ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
-          const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
-          // ── Bottom Geofence Indicator ──
-          Row(
-            children: [
-              Icon(
-                Icons.near_me_rounded,
-                size: 13,
-                color: inRadius
-                    ? const Color(0xFF34C759)
-                    : const Color(0xFFFF9500),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  inRadius
-                      ? 'Radius GPS Valid (~${distance.toStringAsFixed(0)}m dari sekolah)'
-                      : 'Memverifikasi radius lokasi GPS sekolah...',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: inRadius
-                        ? const Color(0xFF34C759)
-                        : const Color(0xFF8E8E93),
+            // Big Start Scan Button
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onOpenScanner();
+                },
+                icon: const Icon(CupertinoIcons.viewfinder, size: 18),
+                label: Text(
+                  'Mulai Scan Wajah',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007AFF),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -901,18 +1198,11 @@ class _BerandaTabState extends State<BerandaTab> {
 
   Widget _buildNoSessionCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
@@ -920,12 +1210,12 @@ class _BerandaTabState extends State<BerandaTab> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF007AFF).withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
-              Icons.nightlight_round,
-              color: Color(0xFF007AFF),
+              CupertinoIcons.calendar,
+              color: Color(0xFF64748B),
               size: 22,
             ),
           ),
@@ -935,19 +1225,19 @@ class _BerandaTabState extends State<BerandaTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tidak Ada Sesi Aktif',
+                  'Belum Ada Sesi Presensi Aktif',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Jadwal presensi berikutnya akan muncul saat sesi dibuka.',
+                  'Sesi presensi akan otomatis muncul saat guru membuka kelas.',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF8E8E93),
+                    fontSize: 11,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -959,434 +1249,168 @@ class _BerandaTabState extends State<BerandaTab> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  3. APPLE HEALTH / ACTIVITY RING STATS (PURE HIG - NO AI SLOP)
+  //  5. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW)
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildAppleHealthRingCard(StatsModel stats) {
-    final rate = stats.persentase.clamp(0.0, 100.0);
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        widget.onOpenKehadiran();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Top Header Row ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.chart_pie,
-                      size: 17,
-                      color: Color(0xFF007AFF),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'RINGKASAN KEHADIRAN',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF8E8E93),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Detail',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF007AFF),
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Icon(
-                      CupertinoIcons.chevron_right,
-                      size: 14,
-                      color: Color(0xFF007AFF),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 18),
-
-            // ── Middle: Apple Activity Ring & Typographic Rate ──
-            Row(
-              children: [
-                // Custom Circular Activity Ring
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: rate / 100.0,
-                        strokeWidth: 8,
-                        strokeCap: StrokeCap.round,
-                        backgroundColor: const Color(0xFFE5E5EA),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF34C759),
-                        ),
-                      ),
-                      Text(
-                        '${rate.toStringAsFixed(0)}%',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF000000),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 18),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Performa Presensi Siswa',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF000000),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${stats.hadir} dari ${stats.total} total pertemuan semester ini.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: const Color(0xFF8E8E93),
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 18),
-
-            // ── Apple Activity Segmented Bar (Proportional) ──
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                height: 7,
-                child: Row(
-                  children: [
-                    if (stats.hadir > 0)
-                      Expanded(
-                        flex: stats.hadir,
-                        child: Container(color: const Color(0xFF34C759)),
-                      ),
-                    if (stats.izin > 0)
-                      Expanded(
-                        flex: stats.izin,
-                        child: Container(color: const Color(0xFFFF9500)),
-                      ),
-                    if (stats.sakit > 0)
-                      Expanded(
-                        flex: stats.sakit,
-                        child: Container(color: const Color(0xFF5856D6)),
-                      ),
-                    if (stats.alpa > 0)
-                      Expanded(
-                        flex: stats.alpa,
-                        child: Container(color: const Color(0xFFFF3B30)),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── 4 Crisp Apple Metric Columns (NO PASTEL BOXES) ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildAppleMetric('Hadir', '${stats.hadir}', const Color(0xFF34C759)),
-                _buildAppleDivider(),
-                _buildAppleMetric('Izin', '${stats.izin}', const Color(0xFFFF9500)),
-                _buildAppleDivider(),
-                _buildAppleMetric('Sakit', '${stats.sakit}', const Color(0xFF5856D6)),
-                _buildAppleDivider(),
-                _buildAppleMetric('Alpa', '${stats.alpa}', const Color(0xFFFF3B30)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppleDivider() {
+  Widget _buildClassmatesStoryRow(List<ClassmateModel> classmates, UserModel currentUser) {
     return Container(
-      width: 1,
-      height: 28,
-      color: const Color(0xFFE5E5EA),
-    );
-  }
-
-  Widget _buildAppleMetric(String label, String value, Color dotColor) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF8E8E93),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF000000),
-            letterSpacing: -0.3,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  //  4. CLASSMATES STRIP (APPLE CONTACTS STYLE)
-  // ═══════════════════════════════════════════════════════════
-
-  Widget _buildClassmatesStrip(
-      List<ClassmateModel> classmates, UserModel user) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  CupertinoIcons.person_2_fill,
-                  size: 17,
-                  color: Color(0xFF007AFF),
+                Row(
+                  children: [
+                    Text(
+                      'Teman Sekelas Hari Ini',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEBF5FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${classmates.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF007AFF),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'Teman Sekelas (${classmates.length})',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: widget.onOpenTeman,
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                children: [
-                  Text(
-                    'Lihat Semua',
+                GestureDetector(
+                  onTap: widget.onOpenTeman,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    'Lihat Semua >',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF007AFF),
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  const Icon(
-                    CupertinoIcons.chevron_right,
-                    size: 14,
-                    color: Color(0xFF007AFF),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 84,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: classmates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final mate = classmates[index];
-              final isHadir = mate.statusHariIni == 'hadir';
+          ),
 
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  ClassmateDetailDialog.show(
-                    context,
-                    classmate: mate,
-                    kelasNama: user.kelas,
-                  );
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Column(
-                  children: [
-                    Stack(
+          const SizedBox(height: 12),
+
+          // Horizontal List of Classmate Avatars
+          SizedBox(
+            height: 84,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: classmates.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final friend = classmates[index];
+                final isHadir = friend.statusHariIni.toLowerCase() == 'hadir';
+
+                final friendAvatarUrl = friend.avatar != null && friend.avatar!.isNotEmpty
+                    ? (friend.avatar!.startsWith('http') ? friend.avatar! : '$_storageBase${friend.avatar}')
+                    : null;
+
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ClassmateDetailDialog.show(context, classmate: friend, kelasNama: currentUser.kelas);
+                  },
+                  child: SizedBox(
+                    width: 58,
+                    child: Column(
                       children: [
+                        // Avatar with Presence Ring
                         Container(
-                          width: 52,
-                          height: 52,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isHadir
-                                  ? const Color(0xFF34C759)
-                                  : const Color(0xFFE5E5EA),
-                              width: isHadir ? 2.5 : 1.5,
+                              color: isHadir ? const Color(0xFF10B981) : const Color(0xFFCBD5E1),
+                              width: 2.2,
                             ),
                           ),
-                          child: ClipOval(
-                            child: (mate.avatar != null &&
-                                    mate.avatar!.isNotEmpty)
-                                ? Image.network(
-                                    '$_storageBase${mate.avatar}',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        _buildInitialAvatar(mate.name),
-                                  )
-                                : _buildInitialAvatar(mate.name),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: ClipOval(
+                              child: friendAvatarUrl != null
+                                  ? CachedNetworkImage(
+                                      imageUrl: friendAvatarUrl,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) => _buildMiniInitials(friend.initials),
+                                    )
+                                  : _buildMiniInitials(friend.initials),
+                            ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: isHadir
-                                  ? const Color(0xFF34C759)
-                                  : const Color(0xFF8E8E93),
-                              shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 2),
-                            ),
+                        const SizedBox(height: 5),
+
+                        // Short First Name
+                        Text(
+                          friend.name.split(' ').first,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+
+                        // Time or Status
+                        Text(
+                          isHadir ? (friend.jamAbsen ?? 'Hadir') : 'Belum',
+                          style: GoogleFonts.inter(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w700,
+                            color: isHadir ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        mate.name.split(' ').first,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1C1C1E),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInitialAvatar(String name) {
-    final initials = name.isNotEmpty
-        ? name
-            .trim()
-            .split(' ')
-            .map((p) => p.isNotEmpty ? p[0] : '')
-            .take(2)
-            .join()
-        : 'S';
-    return Container(
-      color: const Color(0xFFE5E5EA),
-      alignment: Alignment.center,
-      child: Text(
-        initials.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF8E8E93),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildAvatarFallback(UserModel user) {
-    final initials = user.nama.isNotEmpty
-        ? user.nama
-            .trim()
-            .split(' ')
-            .map((p) => p.isNotEmpty ? p[0] : '')
-            .take(2)
-            .join()
-        : 'S';
+  Widget _buildMiniInitials(String initials) {
     return Container(
-      color: const Color(0xFF007AFF),
-      alignment: Alignment.center,
-      child: Text(
-        initials.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
+      color: const Color(0xFFEBF5FF),
+      child: Center(
+        child: Text(
+          initials,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF007AFF),
+          ),
         ),
       ),
     );

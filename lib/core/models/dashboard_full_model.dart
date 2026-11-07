@@ -129,5 +129,31 @@ class DashboardFullModel {
       riwayat: json['riwayat'] as List<dynamic>? ?? [],
     );
   }
+
+  DashboardFullModel copyWith({
+    UserModel? user,
+    StatsModel? stats,
+    bool? hasSesi,
+    bool? sudahHadir,
+    SessionDetail? sesi,
+    PresensiTodayInfo? presensiInfo,
+    GeofenceConfig? geofencing,
+    List<ClassmateModel>? temanSekelas,
+    int? totalTeman,
+    List<dynamic>? riwayat,
+  }) {
+    return DashboardFullModel(
+      user: user ?? this.user,
+      stats: stats ?? this.stats,
+      hasSesi: hasSesi ?? this.hasSesi,
+      sudahHadir: sudahHadir ?? this.sudahHadir,
+      sesi: sesi ?? this.sesi,
+      presensiInfo: presensiInfo ?? this.presensiInfo,
+      geofencing: geofencing ?? this.geofencing,
+      temanSekelas: temanSekelas ?? this.temanSekelas,
+      totalTeman: totalTeman ?? this.totalTeman,
+      riwayat: riwayat ?? this.riwayat,
+    );
+  }
 }
 

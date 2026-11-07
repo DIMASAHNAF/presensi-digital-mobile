@@ -54,7 +54,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 140),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Apple-style pop-out expansion when transitioning out
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.6).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.4).animate(
       CurvedAnimation(
         parent: _exitController,
         curve: Curves.easeInOutCubic,
@@ -53,16 +53,13 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startLaunchSequence() async {
-    // Light haptic tap on launch
     try {
       HapticFeedback.lightImpact();
     } catch (_) {}
 
-    // Wait for the entrance spring animations to complete
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
-    // Pop-out exit transition
     await _exitController.forward();
     if (!mounted) return;
 
@@ -72,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 400),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: animation,
           child: destination,
@@ -84,174 +81,172 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000), // Apple OLED True Black
-      body: AnimatedBuilder(
-        animation: _exitController,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _opacityAnimation.value,
-            child: Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            ),
-          );
-        },
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(flex: 3),
-
-              // ── Apple Pop-out Logo with Shockwave Ring ──
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outer glowing shockwave ring
-                  Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF007AFF).withOpacity(0.35),
-                        width: 1.5,
-                      ),
-                    ),
-                  )
-                      .animate(
-                        onPlay: (controller) => controller.repeat(),
-                      )
-                      .scale(
-                        begin: const Offset(0.8, 0.8),
-                        end: const Offset(1.35, 1.35),
-                        duration: 1800.ms,
-                        curve: Curves.easeOutCubic,
-                      )
-                      .fadeOut(duration: 1800.ms),
-
-                  // Middle glass backdrop
-                  Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF1C1C1E).withOpacity(0.8),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.16),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF007AFF).withOpacity(0.28),
-                          blurRadius: 36,
-                          spreadRadius: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // App Logo with Apple spring pop-out
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 76,
-                    height: 76,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      CupertinoIcons.checkmark_seal_fill,
-                      size: 64,
-                      color: Color(0xFF007AFF),
-                    ),
-                  )
-                      .animate()
-                      .scale(
-                        begin: const Offset(0.2, 0.2),
-                        end: const Offset(1.0, 1.0),
-                        duration: 750.ms,
-                        curve: Curves.easeOutBack,
-                      )
-                      .fadeIn(duration: 400.ms)
-                      .then(delay: 150.ms)
-                      .shimmer(
-                        duration: 1400.ms,
-                        color: Colors.white.withOpacity(0.25),
-                      ),
-                ],
+      backgroundColor: const Color(0xFFF2F2F7), // Apple System Grouped Background
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.dark.copyWith(
+          statusBarColor: Colors.transparent,
+        ),
+        child: AnimatedBuilder(
+          animation: _exitController,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _opacityAnimation.value,
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: child,
               ),
+            );
+          },
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 3),
 
-              const SizedBox(height: 32),
-
-              // ── Apple Typography ──
-              Text(
-                'PRESENSI SISWA',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 3.5,
-                ),
-              )
-                  .animate(delay: 350.ms)
-                  .fadeIn(duration: 500.ms)
-                  .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
-
-              const SizedBox(height: 6),
-
-              Text(
-                'SMK NEGERI 1 BERINGIN',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF8E8E93),
-                  letterSpacing: 1.5,
-                ),
-              )
-                  .animate(delay: 500.ms)
-                  .fadeIn(duration: 500.ms)
-                  .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
-
-              const SizedBox(height: 44),
-
-              // ── Sleek iOS Progress Capsule ──
-              Container(
-                width: 140,
-                height: 3.5,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 50,
+                // ── Apple Pop-out Logo with Subtle Shockwave Ring ──
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer subtle shockwave ring
+                    Container(
+                      width: 130,
+                      height: 130,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF007AFF), Color(0xFF5AC8FA)],
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF007AFF).withOpacity(0.2),
+                          width: 1.5,
                         ),
-                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    )
+                        .animate(
+                          onPlay: (controller) => controller.repeat(),
+                        )
+                        .scale(
+                          begin: const Offset(0.85, 0.85),
+                          end: const Offset(1.3, 1.3),
+                          duration: 1800.ms,
+                          curve: Curves.easeOutCubic,
+                        )
+                        .fadeOut(duration: 1800.ms),
+
+                    // Middle pure white card backdrop
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                          color: const Color(0xFFE5E5EA),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 24,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // App Logo
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 68,
+                      height: 68,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        CupertinoIcons.checkmark_seal_fill,
+                        size: 56,
+                        color: Color(0xFF007AFF),
+                      ),
+                    )
+                        .animate()
+                        .scale(
+                          begin: const Offset(0.4, 0.4),
+                          end: const Offset(1.0, 1.0),
+                          duration: 700.ms,
+                          curve: Curves.easeOutBack,
+                        )
+                        .fadeIn(duration: 350.ms),
+                  ],
+                ),
+
+                const SizedBox(height: 28),
+
+                // ── Apple Typography ──
+                Text(
+                  'PRESENSI SISWA',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF000000),
+                    letterSpacing: 2.0,
+                  ),
+                )
+                    .animate(delay: 300.ms)
+                    .fadeIn(duration: 400.ms)
+                    .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  'SMK NEGERI 1 BERINGIN',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF007AFF),
+                    letterSpacing: 1.2,
+                  ),
+                )
+                    .animate(delay: 450.ms)
+                    .fadeIn(duration: 400.ms)
+                    .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+
+                const SizedBox(height: 40),
+
+                // ── Sleek iOS Progress Capsule ──
+                Container(
+                  width: 130,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E5EA),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF007AFF),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              )
-                  .animate(delay: 600.ms)
-                  .fadeIn(duration: 400.ms),
+                )
+                    .animate(delay: 550.ms)
+                    .fadeIn(duration: 400.ms),
 
-              const Spacer(flex: 3),
+                const Spacer(flex: 3),
 
-              // ── Bottom Branding ──
-              Text(
-                'Portal Siswa • iOS Experience',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.3),
-                  letterSpacing: 0.6,
-                ),
-              ).animate(delay: 800.ms).fadeIn(duration: 600.ms),
+                // ── Bottom Branding ──
+                Text(
+                  'Portal Presensi Digital Siswa',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF8E8E93),
+                    letterSpacing: 0.4,
+                  ),
+                ).animate(delay: 700.ms).fadeIn(duration: 500.ms),
 
-              const SizedBox(height: 36),
-            ],
+                const SizedBox(height: 36),
+              ],
+            ),
           ),
         ),
       ),

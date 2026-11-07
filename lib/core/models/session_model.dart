@@ -58,10 +58,51 @@ class SessionDetail {
   final String tanggal;
   final String tipe;
 
-  String get jamMulai => jamPelajaran.contains('-') ? jamPelajaran.split('-').first.trim() : jamPelajaran;
-  String get jamSelesai => jamPelajaran.contains('-') ? jamPelajaran.split('-').last.trim() : jamPelajaran;
   String get namaKelas => kelasNama;
   String get keterangan => guruNama.isNotEmpty ? 'Guru: $guruNama' : 'Presensi Pembelajaran';
+
+  // Smart subject name extraction:
+  String get namaMapel {
+    if (jamPelajaran.contains('(')) {
+      final name = jamPelajaran.split('(').first.trim();
+      if (name.isNotEmpty) return name;
+    }
+    return 'Presensi Mata Pelajaran';
+  }
+
+  // Smart schedule time extraction (without duplicating subject name):
+  String get jadwalJam {
+    if (jamPelajaran.contains('•')) {
+      final parts = jamPelajaran.split('•');
+      if (parts.length >= 2) {
+        return parts.last.replaceAll(')', '').trim();
+      }
+    }
+    if (jamPelajaran.contains('(') && jamPelajaran.contains(')')) {
+      final inside = jamPelajaran.substring(
+        jamPelajaran.indexOf('(') + 1,
+        jamPelajaran.lastIndexOf(')'),
+      );
+      return inside.trim();
+    }
+    return jamPelajaran;
+  }
+
+  // Smart period label extraction:
+  String get jamKeLabel {
+    final lower = jamPelajaran.toLowerCase();
+    if (lower.contains('jam ke')) {
+      final regex = RegExp(r'Jam ke[- ]?(\d+)', caseSensitive: false);
+      final match = regex.firstMatch(jamPelajaran);
+      if (match != null) {
+        return 'Jam ke-${match.group(1)}';
+      }
+    }
+    return 'Jam Pelajaran';
+  }
+
+  String get jamMulai => jadwalJam.contains('-') ? jadwalJam.split('-').first.trim() : jadwalJam;
+  String get jamSelesai => jadwalJam.contains('-') ? jadwalJam.split('-').last.trim() : jadwalJam;
 
   SessionDetail({
     required this.id,

@@ -10,11 +10,13 @@ import '../dialogs/edit_profile_dialog.dart';
 class ProfilTab extends StatelessWidget {
   final DashboardFullModel data;
   final VoidCallback onLogout;
+  final ValueChanged<UserModel>? onProfileUpdated;
 
   const ProfilTab({
     super.key,
     required this.data,
     required this.onLogout,
+    this.onProfileUpdated,
   });
 
   static const String _storageBase =
@@ -25,7 +27,7 @@ class ProfilTab extends StatelessWidget {
     EditProfileDialog.show(
       context,
       user: data.user,
-      onProfileUpdated: (updatedUser) {},
+      onProfileUpdated: onProfileUpdated ?? (updatedUser) {},
     );
   }
 
@@ -37,7 +39,7 @@ class ProfilTab extends StatelessWidget {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 140),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
