@@ -12,6 +12,18 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <uses-feature android:name="android.hardware.location.gps" android:required="true"/>
 
+    <!-- Queries for url_launcher (Google Maps, Browser) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
+
     <application
         android:label="Presensi SMKN 1 Beringin"
         android:name="${applicationName}"

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base href="$FLUTTER_BASE_HREF">
 
@@ -7,7 +8,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Presensi Siswa SMK Negeri 1 Beringin">
-  <meta name="theme-color" content="#F2F2F7">
+  <meta name="theme-color" content="#000000">
 
   <!-- Cache busting headers -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -16,27 +17,44 @@
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Presensi Siswa">
   <link rel="apple-touch-icon" href="assets/assets/images/logo.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="assets/assets/images/logo.png"/>
+  <link rel="icon" type="image/png" href="assets/assets/images/logo.png" />
 
   <title>Portal Siswa • SMKN 1 Beringin</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Aggressive Service Worker & Cache Killer to force newest iOS experience -->
   <script>
+    // Polyfill requestFullscreen for iOS Safari / WebKit
+    (function () {
+      var noop = function () { return Promise.resolve(); };
+      if (!Element.prototype.requestFullscreen) {
+        Element.prototype.requestFullscreen = Element.prototype.webkitRequestFullscreen || Element.prototype.mozRequestFullScreen || Element.prototype.msRequestFullscreen || noop;
+      }
+      if (!Document.prototype.requestFullscreen) {
+        Document.prototype.requestFullscreen = Document.prototype.webkitRequestFullscreen || Document.prototype.mozRequestFullScreen || Document.prototype.msRequestFullscreen || noop;
+      }
+      if (document.documentElement && !document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen = document.documentElement.webkitRequestFullscreen || noop;
+      }
+      if (!Document.prototype.exitFullscreen) {
+        Document.prototype.exitFullscreen = Document.prototype.webkitExitFullscreen || Document.prototype.mozCancelFullScreen || Document.prototype.msExitFullscreen || noop;
+      }
+    })();
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
         for (var r of registrations) {
           r.unregister();
         }
       });
     }
     if ('caches' in window) {
-      caches.keys().then(function(names) {
+      caches.keys().then(function (names) {
         for (var n of names) caches.delete(n);
       });
     }
@@ -50,18 +68,22 @@
       margin: 0;
       padding: 0;
     }
-    html, body {
+
+    html,
+    body {
       height: 100%;
       overflow: hidden;
     }
+
     body {
-      background-color: #F2F2F7;
+      background-color: #000000;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", Roboto, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
     }
+
     #splash-loading {
       display: flex;
       flex-direction: column;
@@ -71,111 +93,175 @@
       padding: 24px;
       max-width: 380px;
     }
+
     .splash-logo-wrap {
       position: relative;
-      width: 86px;
-      height: 86px;
+      width: 90px;
+      height: 90px;
       margin-bottom: 24px;
     }
+
     .splash-logo {
-      width: 86px;
-      height: 86px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      background: #FFFFFF;
-      padding: 8px;
       animation: logoSpring 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       opacity: 0;
       transform: scale(0.3);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      border: 1px solid #E5E5EA;
+      box-shadow: 0 0 50px rgba(0, 122, 255, 0.35);
     }
+
     .splash-ring {
       position: absolute;
       top: -8px;
       left: -8px;
-      width: 102px;
-      height: 102px;
+      width: 106px;
+      height: 106px;
       border-radius: 50%;
-      border: 1.5px solid rgba(0, 122, 255, 0.25);
+      border: 1.5px solid rgba(0, 122, 255, 0.4);
       animation: ringPulse 2s ease-in-out infinite;
       animation-delay: 0.6s;
       opacity: 0;
     }
+
     .splash-title {
       font-size: 16px;
       font-weight: 800;
-      color: #000000;
-      letter-spacing: 2.5px;
+      color: #FFFFFF;
+      letter-spacing: 3.5px;
       text-transform: uppercase;
       margin-bottom: 6px;
       opacity: 0;
       animation: textSlideUp 0.5s ease-out forwards;
       animation-delay: 0.3s;
     }
+
     .splash-subtitle {
       font-size: 12px;
-      font-weight: 700;
-      color: #007AFF;
+      font-weight: 600;
+      color: #8E8E93;
       letter-spacing: 1.2px;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
       opacity: 0;
       animation: textSlideUp 0.5s ease-out forwards;
       animation-delay: 0.45s;
     }
+
     .loading-bar-track {
-      width: 130px;
-      height: 3.5px;
-      background: #E5E5EA;
+      width: 140px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 2px;
       overflow: hidden;
       opacity: 0;
       animation: textSlideUp 0.5s ease-out forwards;
       animation-delay: 0.6s;
     }
+
     .loading-bar-fill {
       height: 100%;
       width: 40%;
-      background: #007AFF;
+      background: linear-gradient(90deg, #007AFF, #5AC8FA);
       border-radius: 2px;
       animation: loadingProgress 2s ease-in-out infinite;
     }
+
     .splash-footer {
       position: fixed;
-      bottom: 32px;
+      bottom: 36px;
       font-size: 11px;
       font-weight: 500;
-      color: #8E8E93;
-      letter-spacing: 0.5px;
+      color: rgba(255, 255, 255, 0.25);
+      letter-spacing: 0.6px;
       opacity: 0;
       animation: fadeIn 0.6s ease-out forwards;
       animation-delay: 0.8s;
     }
 
     @keyframes logoSpring {
-      0% { opacity: 0; transform: scale(0.2); }
-      70% { opacity: 1; transform: scale(1.08); }
-      85% { transform: scale(0.96); }
-      100% { opacity: 1; transform: scale(1); }
+      0% {
+        opacity: 0;
+        transform: scale(0.2);
+      }
+
+      70% {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+
+      85% {
+        transform: scale(0.96);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
+
     @keyframes ringPulse {
-      0% { opacity: 0; transform: scale(0.85); }
-      50% { opacity: 0.6; transform: scale(1.2); }
-      100% { opacity: 0; transform: scale(1.4); }
+      0% {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+
+      50% {
+        opacity: 0.6;
+        transform: scale(1.2);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.4);
+      }
     }
+
     @keyframes textSlideUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     @keyframes fadeIn {
-      to { opacity: 1; }
+      to {
+        opacity: 1;
+      }
     }
+
     @keyframes loadingProgress {
-      0% { width: 0%; margin-left: 0; }
-      50% { width: 70%; margin-left: 15%; }
-      100% { width: 0%; margin-left: 100%; }
+      0% {
+        width: 0%;
+        margin-left: 0;
+      }
+
+      50% {
+        width: 70%;
+        margin-left: 15%;
+      }
+
+      100% {
+        width: 0%;
+        margin-left: 100%;
+      }
+    }
+
+    /* Force camera video feed to always fill circular viewports with zero rectangular letterboxing */
+    flt-platform-view video,
+    flt-platform-view div,
+    video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
+
 <body>
   <div id="splash-loading">
     <div class="splash-logo-wrap">
@@ -188,11 +274,11 @@
       <div class="loading-bar-fill"></div>
     </div>
   </div>
-  <div class="splash-footer">Portal Siswa • iOS 18 Light Edition</div>
+  <div class="splash-footer">Portal Siswa • Apple Dock Edition v2.0.8</div>
 
   <!-- Remove splash once Flutter first frame renders -->
   <script>
-    window.addEventListener('flutter-first-frame', function() {
+    window.addEventListener('flutter-first-frame', function () {
       var splash = document.getElementById('splash-loading');
       if (splash) splash.remove();
       var footer = document.querySelector('.splash-footer');
@@ -200,6 +286,135 @@
     });
   </script>
 
-  <script src="flutter_bootstrap.js?v=2.5.0-ios18-light" async></script>
+  <script src="/vendor/face-api/face-api.min.js"></script>
+  <script>
+    function findDomVideo() {
+      var v = document.querySelector('video');
+      if (v) return v;
+      // Search inside shadowRoots of flt-platform-view or flutter-view
+      var all = document.querySelectorAll('*');
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].shadowRoot) {
+          var sv = all[i].shadowRoot.querySelector('video');
+          if (sv) return sv;
+        }
+      }
+      return null;
+    }
+
+    window.compressImageB64 = async function (b64, maxDim, quality) {
+      return new Promise(function (resolve) {
+        try {
+          var img = new Image();
+          img.onload = function () {
+            var w = img.width;
+            var h = img.height;
+            if (w > h) {
+              if (w > maxDim) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              }
+            } else {
+              if (h > maxDim) {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality || 0.75));
+          };
+          img.onerror = function () {
+            resolve(b64);
+          };
+          img.src = b64;
+        } catch (e) {
+          resolve(b64);
+        }
+      });
+    };
+
+    window.faceEnrollEngine = {
+      isReady: false,
+      isDetecting: false,
+      lastResult: null,
+      init: async function () {
+        if (!window.faceapi) return false;
+        if (this.isReady) return true;
+        try {
+          await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/vendor/face-api/models'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/vendor/face-api/models'),
+            faceapi.nets.faceExpressionNet.loadFromUri('/vendor/face-api/models')
+          ]);
+          this.isReady = true;
+          return true;
+        } catch (e) {
+          console.warn('faceEnrollEngine init error:', e);
+          return false;
+        }
+      },
+      detect: async function () {
+        if (!this.isReady) {
+          this.init();
+          return { detected: false, yaw: 0, smile: 0 };
+        }
+        if (this.isDetecting) return this.lastResult;
+        var video = findDomVideo();
+        if (!video || video.paused || video.readyState < 2 || !video.videoWidth) {
+          return { detected: false, yaw: 0, smile: 0 };
+        }
+        this.isDetecting = true;
+        try {
+          var detection = await faceapi.detectSingleFace(
+            video,
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.25 })
+          ).withFaceLandmarks(true).withFaceExpressions();
+
+          if (detection && detection.landmarks) {
+            var pts = detection.landmarks.positions;
+            var nose = pts[30];
+            var leftEye = pts[36];
+            var rightEye = pts[45];
+            var box = detection.detection.box;
+            var boxCenterX = box.x + (box.width / 2);
+            var noseOffset = (nose.x - boxCenterX) / Math.max(1, box.width);
+            var eyeMidX = (leftEye.x + rightEye.x) / 2;
+            var eyeSpan = Math.max(1, rightEye.x - leftEye.x);
+            var eyeOffset = (nose.x - eyeMidX) / eyeSpan;
+            var yaw = (noseOffset * 2.0) + (eyeOffset * 0.8);
+            var happy = detection.expressions ? (detection.expressions.happy || 0) : 0;
+
+            this.lastResult = {
+              detected: true,
+              yaw: yaw,
+              smile: happy
+            };
+          } else {
+            this.lastResult = {
+              detected: false,
+              yaw: 0,
+              smile: 0
+            };
+          }
+        } catch (e) {
+          this.lastResult = { detected: false, yaw: 0, smile: 0 };
+        } finally {
+          this.isDetecting = false;
+        }
+        return this.lastResult;
+      }
+    };
+    // Preload models in background
+    setTimeout(function() {
+      if (window.faceEnrollEngine) window.faceEnrollEngine.init();
+    }, 1000);
+  </script>
+
+  <script src="flutter_bootstrap.js?v=2.13.0" async></script>
 </body>
+
 </html>

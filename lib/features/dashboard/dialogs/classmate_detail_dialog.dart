@@ -17,6 +17,14 @@ class ClassmateDetailDialog extends StatelessWidget {
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
 
+  static String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   static Future<void> show(
     BuildContext context, {
     required ClassmateModel classmate,
@@ -91,7 +99,7 @@ class ClassmateDetailDialog extends StatelessWidget {
 
           // ── Name & Status ──
           Text(
-            classmate.nama,
+            _toTitleCase(classmate.nama),
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,

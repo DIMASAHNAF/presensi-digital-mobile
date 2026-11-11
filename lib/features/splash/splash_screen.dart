@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../core/models/dashboard_full_model.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../auth/login_screen.dart';
+import '../auth/onboarding_password_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,10 +22,20 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _exitController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
+  DashboardFullModel? _preloadedDashboardData;
 
   @override
   void initState() {
     super.initState();
+    // Preload dashboard data in parallel while splash animation runs
+    if (StorageService.isLoggedIn()) {
+      ApiService.getDashboardFull().then((res) {
+        if (res.success && res.data != null) {
+          _preloadedDashboardData = res.data;
+        }
+      }).catchError((_) {});
+    }
+
     _exitController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
@@ -64,8 +77,15 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     final bool loggedIn = StorageService.isLoggedIn();
-    final Widget destination =
-        loggedIn ? const DashboardScreen() : const LoginScreen();
+    final user = StorageService.getUser();
+    Widget destination;
+    if (!loggedIn || user == null) {
+      destination = const LoginScreen();
+    } else if (!user.hasChangedPassword) {
+      destination = OnboardingPasswordScreen(user: user);
+    } else {
+      destination = DashboardScreen(initialData: _preloadedDashboardData);
+    }
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(

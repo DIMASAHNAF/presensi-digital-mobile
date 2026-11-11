@@ -77,6 +77,83 @@ class ApiService {
     }
   }
 
+  /// Update Password (Onboarding & Security Setup)
+  static Future<ApiResponse<UserModel>> updatePassword(String password, String confirmation) async {
+    try {
+      final response = await _client.post(
+        Uri.parse(ApiConstants.updatePassword),
+        headers: _headers(withAuth: true),
+        body: jsonEncode({
+          'password': password.trim(),
+          'password_confirmation': confirmation.trim(),
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      final body = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && body['success'] == true) {
+        final currentUser = StorageService.getUser();
+        if (currentUser != null) {
+          final updated = currentUser.copyWith(hasChangedPassword: true);
+          await StorageService.saveUser(updated);
+          return ApiResponse(
+            success: true,
+            message: body['message'] ?? 'Password berhasil diperbarui.',
+            data: updated,
+          );
+        }
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'Password berhasil diperbarui.',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: body['message'] ?? 'Gagal memperbarui password.',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal: periksa internet Anda.',
+      );
+    }
+  }
+
+  /// Submit Izin / Sakit Real-Time
+  static Future<ApiResponse<void>> submitIzin({
+    required String jenis,
+    required String keterangan,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse(ApiConstants.izin),
+        headers: _headers(withAuth: true),
+        body: jsonEncode({
+          'jenis': jenis.toLowerCase(),
+          'keterangan': keterangan.trim(),
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body['success'] == true) {
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'Permohonan berhasil dicatat.',
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: body['message'] ?? 'Gagal mengajukan permohonan.',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal saat mengajukan permohonan.',
+      );
+    }
+  }
+
   /// 2. Get Full Dashboard Data (Profile, Active Session, Stats, Classmates, History)
   static Future<ApiResponse<DashboardFullModel>> getDashboardFull() async {
     try {
@@ -206,18 +283,26 @@ class ApiService {
     required double longitude,
     required double accuracy,
     required bool isMocked,
+    int? sesiId,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'image': imageBase64,
+        'face_image': imageBase64,
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracy': accuracy,
+        'is_mock': isMocked,
+        'is_mocked': isMocked,
+      };
+      if (sesiId != null && sesiId > 0) {
+        payload['sesi_id'] = sesiId;
+      }
+
       final response = await _client.post(
         Uri.parse(ApiConstants.scanWajah),
         headers: _headers(withAuth: true),
-        body: jsonEncode({
-          'image': imageBase64,
-          'latitude': latitude,
-          'longitude': longitude,
-          'accuracy': accuracy,
-          'is_mocked': isMocked,
-        }),
+        body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 25));
 
       final body = jsonDecode(response.body);
@@ -243,7 +328,51 @@ class ApiService {
     }
   }
 
-  /// 5. Attendance History
+  /// 5. Enroll Face Biometrics (Multi-angle photos)
+  static Future<ApiResponse<Map<String, dynamic>>> enrollFace({
+    required List<String> faceImagesBase64,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse(ApiConstants.enrollWajah),
+        headers: _headers(withAuth: true),
+        body: jsonEncode({
+          'face_images': faceImagesBase64,
+        }),
+      ).timeout(const Duration(seconds: 45));
+
+      dynamic body;
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        body = null;
+      }
+
+      if (response.statusCode == 200 && body != null && body['success'] == true) {
+        // Refresh local user profile so isFaceEnrolled becomes true
+        await getProfile();
+        return ApiResponse(
+          success: true,
+          message: (body is Map ? body['message'] : null) ?? 'Wajah berhasil didaftarkan!',
+          data: body is Map<String, dynamic> ? body : null,
+        );
+      } else {
+        final errMsg = (body is Map ? body['message'] : null) ??
+            'Gagal mendaftarkan biometrik wajah (HTTP ${response.statusCode}).';
+        return ApiResponse(
+          success: false,
+          message: errMsg,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi jaringan gagal atau server timeout saat memproses biometrik.',
+      );
+    }
+  }
+
+  /// 6. Attendance History
   static Future<ApiResponse<List<HistoryItem>>> getHistory({int limit = 30}) async {
     try {
       final response = await _client.get(

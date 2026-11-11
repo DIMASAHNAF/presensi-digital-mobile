@@ -3,24 +3,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/link.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/models/user_model.dart';
+import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
 
 class ProfilTab extends StatelessWidget {
   final DashboardFullModel data;
   final VoidCallback onLogout;
+  final VoidCallback? onOpenEnrollment;
   final ValueChanged<UserModel>? onProfileUpdated;
 
   const ProfilTab({
     super.key,
     required this.data,
     required this.onLogout,
+    this.onOpenEnrollment,
     this.onProfileUpdated,
   });
 
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
+
+  static String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
 
   void _openEdit(BuildContext context) {
     HapticFeedback.lightImpact();
@@ -28,6 +41,47 @@ class ProfilTab extends StatelessWidget {
       context,
       user: data.user,
       onProfileUpdated: onProfileUpdated ?? (updatedUser) {},
+    );
+  }
+
+  void _openChangePassword(BuildContext context) {
+    HapticFeedback.lightImpact();
+    ChangePasswordDialog.show(context);
+  }
+
+  void _launchWebsite(String url) async {
+    final cleanUrl = url.startsWith('http') ? url : 'https://$url';
+    final uri = Uri.parse(cleanUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _launchWhatsApp(String phone) async {
+    var cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '62${cleanPhone.substring(1)}';
+    }
+    final uri = Uri.parse('https://wa.me/$cleanPhone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _copyToClipboard(BuildContext context, String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$label disalin ke papan klip!',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: const Color(0xFF0F172A),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
@@ -39,11 +93,11 @@ class ProfilTab extends StatelessWidget {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 120),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 130),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. APPLE ID HERO CARD ──
+          // ── 1. APPLE ID HERO CARD WITH CURVED WAVE BANNER ──
           _buildAppleIDHero(context, user)
               .animate()
               .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
@@ -54,59 +108,21 @@ class ProfilTab extends StatelessWidget {
                 curve: Curves.easeOutBack,
               ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // ── 2. DATA AKADEMIK (iOS Inset Group) ──
-          _buildSectionHeader('INFORMASI AKADEMIK'),
-          const SizedBox(height: 8),
-          _buildGroupedCard([
-            _buildTile(
-              icon: CupertinoIcons.number,
-              iconColor: const Color(0xFF007AFF),
-              label: 'NISN',
-              value: user.nisn,
-            ),
-            _buildTile(
-              icon: CupertinoIcons.person_2_fill,
-              iconColor: const Color(0xFF5856D6),
-              label: 'Kelas',
-              value: user.kelas,
-            ),
-            _buildTile(
-              icon: CupertinoIcons.building_2_fill,
-              iconColor: const Color(0xFFFF9500),
-              label: 'Sekolah',
-              value: 'SMKN 1 Beringin',
-              isLast: true,
-            ),
-          ]),
+          // ── 2. DATA AKADEMIK & IDENTITAS SISWA (Matching Reference Photo) ──
+          _buildDapodikAcademicCard(context, user)
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 100.ms, curve: Curves.easeOutCubic),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // ── 3. NOTIFIKASI ORANG TUA (iOS Inset Group) ──
+          // ── 3. NOTIFIKASI ORANG TUA (Stacked 2-Baris Anti-Tabrakan) ──
           _buildSectionHeader('NOTIFIKASI WHATSAPP ORANG TUA'),
           const SizedBox(height: 8),
-          _buildGroupedCard([
-            _buildTile(
-              icon: CupertinoIcons.person_crop_circle_badge_checkmark,
-              iconColor: const Color(0xFF34C759),
-              label: 'Nama Orang Tua / Wali',
-              value: (user.namaOrtu != null && user.namaOrtu!.isNotEmpty)
-                  ? user.namaOrtu!
-                  : 'Belum diatur',
-            ),
-            _buildTile(
-              icon: CupertinoIcons.phone_fill,
-              iconColor: const Color(0xFF34C759),
-              label: 'Nomor WhatsApp',
-              value: (user.noHpOrtu != null && user.noHpOrtu!.isNotEmpty)
-                  ? user.noHpOrtu!
-                  : 'Belum diatur',
-              isLast: true,
-            ),
-          ]),
+          _buildWhatsAppNotificationCard(context, user),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // ── 4. BIOMETRIK & KEAMANAN ──
           _buildSectionHeader('BIOMETRIK & KEAMANAN'),
@@ -117,18 +133,25 @@ class ProfilTab extends StatelessWidget {
               iconColor: user.isFaceEnrolled
                   ? const Color(0xFF34C759)
                   : const Color(0xFFFF9500),
-              label: 'Face ID Presensi',
+              label: 'Face ID Biometrik',
               value: user.isFaceEnrolled
                   ? 'Terverifikasi & Aktif'
-                  : 'Belum Rekam Wajah',
+                  : 'Belum Terdaftar',
               valueColor: user.isFaceEnrolled
                   ? const Color(0xFF34C759)
                   : const Color(0xFFFF9500),
+              onTap: !user.isFaceEnrolled ? onOpenEnrollment : null,
+            ),
+            _buildActionTile(
+              icon: CupertinoIcons.lock_shield,
+              iconColor: const Color(0xFF007AFF),
+              label: 'Ubah Kata Sandi Akun',
               isLast: true,
+              onTap: () => _openChangePassword(context),
             ),
           ]),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // ── 5. AKSI AKUN (iOS Inset Group) ──
           _buildSectionHeader('PENGATURAN'),
@@ -150,14 +173,15 @@ class ProfilTab extends StatelessWidget {
             ),
           ]),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // Footer
           Center(
             child: Text(
-              'Presensi Siswa v2.0 • SMK Negeri 1 Beringin',
+              'Portal Siswa • SMK Negeri 1 Beringin',
               style: GoogleFonts.inter(
                 fontSize: 11,
+                fontWeight: FontWeight.w500,
                 color: const Color(0xFF8E8E93),
               ),
             ),
@@ -168,7 +192,7 @@ class ProfilTab extends StatelessWidget {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  APPLE ID HERO
+  //  1. APPLE ID HERO CARD WITH CURVED WAVE BANNER
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildAppleIDHero(BuildContext context, UserModel user) {
@@ -179,102 +203,185 @@ class ProfilTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 16,
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 18,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          // ── Cover Banner (if set) ──
-          if (hasBanner)
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  height: 100,
-                  width: double.infinity,
-                  child: Image.network(
-                    '$_storageBase${user.banner}',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
+          // ── Wave Curved Header Banner ──
+          ClipPath(
+            clipper: _ProfileWaveClipper(),
+            child: Container(
+              height: 125,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF0F172A),
+                    const Color(0xFF1E293B),
+                    const Color(0xFF2563EB).withOpacity(0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.35),
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.4),
-                      ],
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (hasBanner)
+                    Image.network(
+                      '$_storageBase${user.banner}',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.40),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.35),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  // Top Pill inside Banner
+                  Positioned(
+                    top: 12,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.25), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: user.isFaceEnrolled ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            user.isFaceEnrolled ? 'Face ID Aktif' : 'Belum Wajah',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Edit Profile Top Right
+                  Positioned(
+                    top: 10,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: () => _openEdit(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(CupertinoIcons.pencil, size: 12, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Edit Profil',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
 
           Padding(
-            padding: EdgeInsets.fromLTRB(22, hasBanner ? 0 : 22, 22, 22),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(
               children: [
-                // Large Avatar (Overlaps banner if present)
+                // ── Perfectly Round Circular Avatar (Anti-Aliased Hardware Clip) ──
                 Transform.translate(
-                  offset: Offset(0, hasBanner ? -36 : 0),
+                  offset: const Offset(0, -38),
                   child: Stack(
+                    alignment: Alignment.center,
                     children: [
                       Container(
-                        width: 84,
-                        height: 84,
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 3.5,
-                          ),
+                          color: const Color(0xFFF1F5F9),
+                          border: Border.all(color: Colors.white, width: 3.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 16,
+                              color: Colors.black.withOpacity(0.14),
+                              blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
+                        clipBehavior: Clip.antiAliasWithSaveLayer,
                         child: ClipOval(
+                          clipBehavior: Clip.antiAliasWithSaveLayer,
                           child: (user.avatar != null && user.avatar!.isNotEmpty)
                               ? Image.network(
                                   '$_storageBase${user.avatar}',
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _buildFallback(user),
+                                  width: 86,
+                                  height: 86,
+                                  errorBuilder: (_, __, ___) => _buildFallback(user),
                                 )
                               : _buildFallback(user),
                         ),
                       ),
                       if (user.isFaceEnrolled)
                         Positioned(
-                          bottom: 0,
-                          right: 0,
+                          bottom: 2,
+                          right: 2,
                           child: Container(
-                            width: 24,
-                            height: 24,
+                            width: 22,
+                            height: 22,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF34C759),
+                              color: const Color(0xFF10B981),
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2.5),
+                              border: Border.all(color: Colors.white, width: 2.2),
                             ),
-                            child: const Icon(
-                              CupertinoIcons.checkmark_alt,
-                              color: Colors.white,
-                              size: 14,
+                            child: const Center(
+                              child: Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 13,
+                              ),
                             ),
                           ),
                         ),
@@ -282,120 +389,108 @@ class ProfilTab extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(height: hasBanner ? 0 : 14),
+                Transform.translate(
+                  offset: const Offset(0, -22),
+                  child: Column(
+                    children: [
+                      // Name
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _toTitleCase(user.nama),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFF2563EB),
+                            size: 17,
+                          ),
+                        ],
+                      ),
 
-                // Name
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        user.nama,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                          letterSpacing: -0.4,
+                      const SizedBox(height: 4),
+
+                      Text(
+                        'Siswa Aktif • SMKN 1 Beringin',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF64748B),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      CupertinoIcons.checkmark_seal_fill,
-                      color: Color(0xFF007AFF),
-                      size: 17,
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 4),
-
-                Text(
-                  '@${user.username.isNotEmpty ? user.username : user.nisn} • ${user.kelas}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8E8E93),
-                  ),
-                ),
-
-                // Website / Portfolio chip
-                if (user.website != null && user.website!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF007AFF).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          CupertinoIcons.compass,
-                          size: 12,
-                          color: Color(0xFF007AFF),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            user.website!,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF007AFF),
+                      // Website / Portfolio chip (Clickable with Link widget)
+                      if (user.website != null && user.website!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Link(
+                          uri: Uri.parse(user.website!.startsWith('http')
+                              ? user.website!
+                              : 'https://${user.website!}'),
+                          target: LinkTarget.blank,
+                          builder: (context, followLink) => MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (followLink != null) {
+                                  followLink();
+                                } else {
+                                  _launchWebsite(user.website!);
+                                }
+                              },
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      CupertinoIcons.link,
+                                      size: 12,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Flexible(
+                                      child: Text(
+                                        user.website!,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF2563EB),
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: const Color(0xFF2563EB),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 11,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-
-                // Bio
-                if (user.bio != null && user.bio!.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    user.bio!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: const Color(0xFF3C3C43),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 14),
-
-                // Edit Profile Button
-                CupertinoButton(
-                  color: const Color(0xFFF2F2F7),
-                  borderRadius: BorderRadius.circular(20),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  onPressed: () => _openEdit(context),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        CupertinoIcons.pencil,
-                        size: 13,
-                        color: Color(0xFF007AFF),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Atur Profil',
-                        style: GoogleFonts.inter(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF007AFF),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -407,17 +502,391 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  //  2. DAPODIK ACADEMIC IDENTITY CARD (Photo 1 Reference)
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildDapodikAcademicCard(BuildContext context, UserModel user) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DATA AKADEMIK & IDENTITAS SISWA',
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF64748B),
+                  letterSpacing: 0.6,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: Text(
+                  'DAPODIK',
+                  style: GoogleFonts.inter(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 2 Columns: Kelas & Rombel | NISN Nasional (Equal Height)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Column 1: Kelas
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'KELAS & ROMBEL',
+                              style: GoogleFonts.inter(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.kelas,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          user.kelas.contains('PPLG')
+                              ? 'Pengembangan Perangkat Lunak & Gim'
+                              : 'Kejuruan SMKN 1 Beringin',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2563EB),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // Column 2: NISN
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'NISN NASIONAL',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => _copyToClipboard(context, user.nisn, 'NISN'),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    ),
+                                    child: Text(
+                                      'Salin',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.nisn,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'ID Siswa Kemendikbud',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS & STYLED WIDGETS
+  // ═══════════════════════════════════════════════════════════
+
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.only(left: 6),
       child: Text(
         title,
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: FontWeight.w800,
-          color: const Color(0xFF8E8E93),
+          color: const Color(0xFF64748B),
           letterSpacing: 0.8,
         ),
+      ),
+    );
+  }
+
+  Widget _buildWhatsAppNotificationCard(BuildContext context, UserModel user) {
+    final namaOrtu = (user.namaOrtu != null && user.namaOrtu!.isNotEmpty)
+        ? user.namaOrtu!
+        : 'Belum diatur';
+    final noHpOrtu = (user.noHpOrtu != null && user.noHpOrtu!.isNotEmpty)
+        ? user.noHpOrtu!
+        : 'Belum diatur';
+    final hasPhone = user.noHpOrtu != null && user.noHpOrtu!.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Row 1: Nama Orang Tua / Wali
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  CupertinoIcons.person_crop_circle_badge_checkmark,
+                  size: 20,
+                  color: Color(0xFF10B981),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Nama Orang Tua / Wali',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      namaOrtu,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+          const Divider(height: 1, indent: 52, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 12),
+
+          // Row 2: Nomor WhatsApp Terdaftar
+          InkWell(
+            onTap: hasPhone ? () => _launchWhatsApp(user.noHpOrtu!) : () => _openEdit(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const WhatsAppBrandIcon(size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nomor WhatsApp Terdaftar',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        noHpOrtu,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: hasPhone ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 12),
+
+          // Row 3: Tombol Kirim Pesan Uji Coba ke WhatsApp Wali
+          SizedBox(
+            width: double.infinity,
+            child: CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(14),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                if (hasPhone) {
+                  _launchWhatsApp(user.noHpOrtu!);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Silakan lengkapi nomor WhatsApp Orang Tua terlebih dahulu.',
+                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: const Color(0xFF0F172A),
+                    ),
+                  );
+                }
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const WhatsAppBrandIcon(size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Kirim Pesan Uji Coba ke WhatsApp Wali',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF047857),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -427,10 +896,10 @@ class ProfilTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: const Color(0xFF0F172A).withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -441,51 +910,78 @@ class ProfilTab extends StatelessWidget {
   }
 
   Widget _buildTile({
-    required IconData icon,
-    required Color iconColor,
+    Widget? leadingWidget,
+    IconData? icon,
+    Color? iconColor,
     required String label,
     required String value,
     Color? valueColor,
     bool isLast = false,
+    VoidCallback? onTap,
   }) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+        GestureDetector(
+          onTap: onTap != null
+              ? () {
+                  HapticFeedback.lightImpact();
+                  onTap();
+                }
+              : null,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                if (leadingWidget != null)
+                  leadingWidget
+                else
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: (iconColor ?? const Color(0xFF2563EB)).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon ?? Icons.circle, size: 16, color: iconColor ?? const Color(0xFF2563EB)),
+                  ),
+                const SizedBox(width: 14),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1E293B),
+                  ),
                 ),
-                child: Icon(icon, size: 16, color: iconColor),
-              ),
-              const SizedBox(width: 14),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF1C1C1E),
+                const Spacer(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: valueColor ?? const Color(0xFF64748B),
+                      ),
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 13,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-              const Spacer(),
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor ?? const Color(0xFF8E8E93),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 60, color: Color(0xFFF2F2F7)),
+          const Divider(height: 1, indent: 60, color: Color(0xFFF1F5F9)),
       ],
     );
   }
@@ -511,11 +1007,11 @@ class ProfilTab extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 30,
-                  height: 30,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, size: 16, color: iconColor),
                 ),
@@ -525,28 +1021,28 @@ class ProfilTab extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
-                    color: textColor ?? const Color(0xFF1C1C1E),
+                    color: textColor ?? const Color(0xFF1E293B),
                   ),
                 ),
                 const Spacer(),
                 const Icon(
                   CupertinoIcons.chevron_right,
                   size: 14,
-                  color: Color(0xFFC7C7CC),
+                  color: Color(0xFF94A3B8),
                 ),
               ],
             ),
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 60, color: Color(0xFFF2F2F7)),
+          const Divider(height: 1, indent: 60, color: Color(0xFFF1F5F9)),
       ],
     );
   }
 
   Widget _buildFallback(UserModel user) {
     return Container(
-      color: const Color(0xFF007AFF),
+      color: const Color(0xFF2563EB),
       alignment: Alignment.center,
       child: Text(
         user.nama.isNotEmpty ? user.nama[0] : 'S',
@@ -554,6 +1050,110 @@ class ProfilTab extends StatelessWidget {
           fontSize: 32,
           fontWeight: FontWeight.w800,
           color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  CURVED WAVE CLIPPER FOR PROFILE HEADER (Reference: Photo 5)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class _ProfileWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 24);
+    // Smooth natural wave dipping and rising
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height,
+      size.width * 0.55,
+      size.height - 14,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.82,
+      size.height - 28,
+      size.width,
+      size.height - 18,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  OFFICIAL WHATSAPP BRAND BADGE (Zero AI-Slop, Real Iconography)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class WhatsAppBrandIcon extends StatelessWidget {
+  final double size;
+  const WhatsAppBrandIcon({super.key, this.size = 32});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF25D366),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF25D366).withOpacity(0.30),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: SizedBox(
+          width: size * 0.70,
+          height: size * 0.70,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Chat bubble tail at bottom-left
+              Positioned(
+                bottom: 1.5,
+                left: 1.5,
+                child: Transform.rotate(
+                  angle: -0.65,
+                  child: Container(
+                    width: size * 0.22,
+                    height: size * 0.22,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Main white round speech bubble
+              Container(
+                width: size * 0.60,
+                height: size * 0.60,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.phone_rounded,
+                    size: size * 0.38,
+                    color: const Color(0xFF25D366),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

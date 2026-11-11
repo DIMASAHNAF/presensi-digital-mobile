@@ -23,6 +23,14 @@ class _TemanTabState extends State<TemanTab> {
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
 
+  String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -34,13 +42,15 @@ class _TemanTabState extends State<TemanTab> {
     final classmates = widget.data.temanSekelas;
     final user = widget.data.user;
 
+    final hadirCount = classmates.where((c) => c.statusHariIni.toLowerCase() == 'hadir').length;
+    final belumCount = classmates.length - hadirCount;
+    final attendanceRatio = classmates.isNotEmpty ? hadirCount / classmates.length : 0.0;
+
     final filtered = classmates.where((cm) {
-      if (_selectedFilter == 'Hadir' &&
-          cm.statusHariIni.toLowerCase() != 'hadir') {
+      if (_selectedFilter == 'Hadir' && cm.statusHariIni.toLowerCase() != 'hadir') {
         return false;
       }
-      if (_selectedFilter == 'Belum Hadir' &&
-          cm.statusHariIni.toLowerCase() == 'hadir') {
+      if (_selectedFilter == 'Belum Hadir' && cm.statusHariIni.toLowerCase() == 'hadir') {
         return false;
       }
 
@@ -58,77 +68,144 @@ class _TemanTabState extends State<TemanTab> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 120),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 4, bottom: 130),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. HEADER CARD ──
+          // ── 1. LIVE CLASS ATTENDANCE RADAR HEADER ──
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 16,
+                  color: const Color(0xFF0F172A).withOpacity(0.04),
+                  blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'KOMUNITAS KELAS',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF8E8E93),
-                        letterSpacing: 0.8,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'KEHADIRAN KELAS HARI INI',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF64748B),
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          user.kelas,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user.kelas,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                        letterSpacing: -0.5,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            CupertinoIcons.person_2_fill,
+                            size: 15,
+                            color: Color(0xFF2563EB),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${classmates.length} Siswa',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF007AFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+
+                const SizedBox(height: 14),
+
+                // Live Presence Ratio Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 8,
+                    child: Row(
+                      children: [
+                        if (hadirCount > 0)
+                          Expanded(
+                            flex: hadirCount,
+                            child: Container(color: const Color(0xFF10B981)),
+                          ),
+                        if (belumCount > 0)
+                          Expanded(
+                            flex: belumCount,
+                            child: Container(color: const Color(0xFFE2E8F0)),
+                          ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        CupertinoIcons.person_2_fill,
-                        size: 16,
-                        color: Color(0xFF007AFF),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${classmates.length} Siswa',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF007AFF),
+                ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
                         ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$hadirCount Hadir di Sekolah (${(attendanceRatio * 100).toInt()}%)',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '$belumCount Belum Hadir',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF94A3B8),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -139,27 +216,27 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 14),
 
-          // ── 2. iOS SEARCH FIELD ──
+          // ── 2. SEARCH FIELD ──
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
-              style: GoogleFonts.inter(fontSize: 14, color: Colors.black),
+              style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF0F172A)),
               decoration: InputDecoration(
                 hintText: 'Cari teman sekelas...',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 13,
-                  color: const Color(0xFF8E8E93),
+                  color: const Color(0xFF94A3B8),
                 ),
                 prefixIcon: const Icon(
                   CupertinoIcons.search,
                   size: 18,
-                  color: Color(0xFF8E8E93),
+                  color: Color(0xFF94A3B8),
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? GestureDetector(
@@ -170,7 +247,7 @@ class _TemanTabState extends State<TemanTab> {
                         child: const Icon(
                           CupertinoIcons.clear_thick_circled,
                           size: 16,
-                          color: Color(0xFF8E8E93),
+                          color: Color(0xFF94A3B8),
                         ),
                       )
                     : null,
@@ -185,20 +262,26 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 12),
 
-          // ── 3. iOS FILTER CHIPS ──
+          // ── 3. FILTER CHIPS (Muat 100% Layar Mobile tanpa Terpotong) ──
           Row(
             children: [
-              _buildFilterChip('Semua (${classmates.length})', 'Semua'),
+              Expanded(
+                child: _buildFilterChip('Semua (${classmates.length})', 'Semua'),
+              ),
               const SizedBox(width: 8),
-              _buildFilterChip('Hadir', 'Hadir'),
+              Expanded(
+                child: _buildFilterChip('Hadir ($hadirCount)', 'Hadir'),
+              ),
               const SizedBox(width: 8),
-              _buildFilterChip('Belum Hadir', 'Belum Hadir'),
+              Expanded(
+                child: _buildFilterChip('Belum Hadir ($belumCount)', 'Belum Hadir'),
+              ),
             ],
           ),
 
           const SizedBox(height: 16),
 
-          // ── 4. CLASSMATES LIST (iOS Contacts Group) ──
+          // ── 4. CLASSMATES LIST ──
           if (filtered.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
@@ -209,13 +292,13 @@ class _TemanTabState extends State<TemanTab> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E5EA),
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       CupertinoIcons.person_2,
                       size: 26,
-                      color: Color(0xFF8E8E93),
+                      color: Color(0xFF94A3B8),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -223,7 +306,7 @@ class _TemanTabState extends State<TemanTab> {
                     'Tidak ada teman yang cocok',
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF8E8E93),
+                      color: const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -234,10 +317,10 @@ class _TemanTabState extends State<TemanTab> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: const Color(0xFF0F172A).withOpacity(0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -248,95 +331,91 @@ class _TemanTabState extends State<TemanTab> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filtered.length,
                 separatorBuilder: (_, __) =>
-                    const Divider(height: 1, indent: 68, color: Color(0xFFF2F2F7)),
-                itemBuilder: (context, idx) {
-                  final c = filtered[idx];
-                  final isHadir = c.statusHariIni.toLowerCase() == 'hadir';
+                    const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
+                itemBuilder: (context, index) {
+                  final cm = filtered[index];
+                  final isHadir = cm.statusHariIni.toLowerCase() == 'hadir';
 
-                  return GestureDetector(
+                  return InkWell(
                     onTap: () {
                       HapticFeedback.lightImpact();
                       ClassmateDetailDialog.show(
                         context,
-                        classmate: c,
+                        classmate: cm,
                         kelasNama: user.kelas,
                       );
                     },
-                    behavior: HitTestBehavior.opaque,
+                    borderRadius: BorderRadius.circular(20),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: Row(
                         children: [
-                          // Avatar
-                          Stack(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isHadir
-                                        ? const Color(0xFF34C759)
-                                        : const Color(0xFFE5E5EA),
-                                    width: isHadir ? 2 : 1,
-                                  ),
-                                ),
-                                child: ClipOval(
-                                  child: (c.avatar != null &&
-                                          c.avatar!.isNotEmpty)
-                                      ? Image.network(
-                                          '$_storageBase${c.avatar}',
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _buildFallback(c),
-                                        )
-                                      : _buildFallback(c),
-                                ),
-                              ),
-                              if (isHadir)
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: Container(
-                                    width: 13,
-                                    height: 13,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF34C759),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                          color: Colors.white, width: 2),
+                          // ── Clean Circular Avatar (Tanpa Titik Ganda) ──
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFF1F5F9),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(100),
+                              clipBehavior: Clip.antiAliasWithSaveLayer,
+                              child: (cm.avatar != null && cm.avatar!.isNotEmpty)
+                                  ? Image.network(
+                                      '$_storageBase${cm.avatar}',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Center(
+                                        child: Text(
+                                          cm.initials,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        cm.initials,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF2563EB),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                            ],
+                            ),
                           ),
 
                           const SizedBox(width: 14),
 
-                          // Name & Username
+                          // Name (Title Case) & NISN (Tanpa @)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  c.nama,
+                                  _toTitleCase(cm.name),
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
+                                    fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.black,
+                                    color: const Color(0xFF0F172A),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '@${c.username.isNotEmpty ? c.username : c.nisn}',
+                                  'NISN • ${cm.username}',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8E8E93),
+                                    fontSize: 11.5,
+                                    color: const Color(0xFF64748B),
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -344,22 +423,24 @@ class _TemanTabState extends State<TemanTab> {
 
                           // Status Pill
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 3.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isHadir
-                                  ? const Color(0xFFE8F8ED)
-                                  : const Color(0xFFF2F2F7),
-                              borderRadius: BorderRadius.circular(12),
+                              color: isHadir ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isHadir ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Text(
-                              isHadir ? 'Hadir' : 'Belum Hadir',
+                              isHadir
+                                  ? (cm.jamAbsen != null && cm.jamAbsen!.isNotEmpty
+                                      ? 'Hadir ${cm.jamAbsen}'
+                                      : 'Hadir ✓')
+                                  : 'Belum Hadir',
                               style: GoogleFonts.inter(
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: isHadir
-                                    ? const Color(0xFF248A3D)
-                                    : const Color(0xFF8E8E93),
+                                color: isHadir ? const Color(0xFF047857) : const Color(0xFF64748B),
                               ),
                             ),
                           ),
@@ -375,49 +456,44 @@ class _TemanTabState extends State<TemanTab> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
-    final isSelected = _selectedFilter == value;
-
+  Widget _buildFilterChip(String label, String filterKey) {
+    final isSelected = _selectedFilter == filterKey;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        setState(() => _selectedFilter = value);
+        setState(() => _selectedFilter = filterKey);
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF007AFF) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? const Color(0xFF2563EB) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF007AFF) : const Color(0xFFE5E5EA),
-            width: 0.8,
+            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            width: 1.0,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
           style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallback(ClassmateModel c) {
-    return Container(
-      color: const Color(0xFFF2F2F7),
-      alignment: Alignment.center,
-      child: Text(
-        c.nama.isNotEmpty ? c.nama[0] : 'S',
-        style: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF8E8E93),
         ),
       ),
     );

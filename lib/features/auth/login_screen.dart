@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/services/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'onboarding_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,10 +51,20 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (res.success && res.data != null) {
+        final user = res.data!;
         HapticFeedback.mediumImpact();
-        Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(builder: (_) => const DashboardScreen()),
-        );
+
+        if (!user.hasChangedPassword) {
+          Navigator.of(context).pushReplacement(
+            CupertinoPageRoute(
+              builder: (_) => OnboardingPasswordScreen(user: user),
+            ),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            CupertinoPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        }
       } else {
         HapticFeedback.heavyImpact();
         setState(() {
@@ -309,10 +320,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.black,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Kata Sandi',
+                              hintText: 'Kata Sandi (Kosongkan jika login perdana)',
                               hintStyle: GoogleFonts.inter(
                                 color: const Color(0xFFC7C7CC),
-                                fontSize: 14,
+                                fontSize: 13.5,
                               ),
                               prefixIcon: const Icon(
                                 CupertinoIcons.lock_fill,
@@ -338,9 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             validator: (val) {
-                              if (val == null || val.isEmpty) {
-                                return 'Kata sandi wajib diisi.';
-                              }
+                              // Diperbolehkan kosong untuk siswa baru yang baru login pertama kali
                               return null;
                             },
                           ),

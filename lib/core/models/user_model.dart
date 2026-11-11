@@ -53,6 +53,40 @@ class UserModel {
     );
   }
 
+  UserModel copyWith({
+    int? id,
+    String? nisn,
+    String? name,
+    String? username,
+    int? kelasId,
+    String? kelasNama,
+    String? avatar,
+    String? banner,
+    bool? isFaceEnrolled,
+    bool? hasChangedPassword,
+    String? namaOrtu,
+    String? noHpOrtu,
+    String? bio,
+    String? website,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      nisn: nisn ?? this.nisn,
+      name: name ?? this.name,
+      username: username ?? this.username,
+      kelasId: kelasId ?? this.kelasId,
+      kelasNama: kelasNama ?? this.kelasNama,
+      avatar: avatar ?? this.avatar,
+      banner: banner ?? this.banner,
+      isFaceEnrolled: isFaceEnrolled ?? this.isFaceEnrolled,
+      hasChangedPassword: hasChangedPassword ?? this.hasChangedPassword,
+      namaOrtu: namaOrtu ?? this.namaOrtu,
+      noHpOrtu: noHpOrtu ?? this.noHpOrtu,
+      bio: bio ?? this.bio,
+      website: website ?? this.website,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

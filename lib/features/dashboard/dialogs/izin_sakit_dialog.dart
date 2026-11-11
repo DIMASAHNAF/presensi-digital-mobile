@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -19,8 +21,8 @@ class IzinSakitDialog extends StatefulWidget {
     required this.kelasSiswa,
   });
 
-  static void show(BuildContext context, {required String namaSiswa, required String kelasSiswa}) {
-    showCupertinoModalPopup(
+  static Future<bool?> show(BuildContext context, {required String namaSiswa, required String kelasSiswa}) {
+    return showCupertinoModalPopup<bool>(
       context: context,
       builder: (_) => IzinSakitDialog(namaSiswa: namaSiswa, kelasSiswa: kelasSiswa),
     );
@@ -35,6 +37,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
   final _alasanController = TextEditingController();
   XFile? _lampiranFile;
   final _picker = ImagePicker();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -51,28 +54,82 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
     } catch (_) {}
   }
 
-  void _handleSubmit() {
-    Navigator.of(context).pop();
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text(
-          'Permohonan Terkirim',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Pengajuan $_jenis atas nama ${widget.namaSiswa} telah dicatat dan diteruskan ke Wali Kelas & Guru Piket SMKN 1 Beringin.',
-          style: GoogleFonts.inter(),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Mengerti'),
+  Future<void> _handleSubmit() async {
+    final alasan = _alasanController.text.trim();
+    if (alasan.isEmpty) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Keterangan atau alasan permohonan wajib diisi.',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
-        ],
-      ),
-    );
+          backgroundColor: const Color(0xFFFF3B30),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    setState(() => _isSubmitting = true);
+
+    try {
+      final res = await ApiService.submitIzin(
+        jenis: _jenis,
+        keterangan: alasan,
+      );
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      if (res.success) {
+        HapticFeedback.heavyImpact();
+        Navigator.of(context).pop(true);
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: Text(
+              'Permohonan Terkirim',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Pengajuan $_jenis atas nama ${widget.namaSiswa} telah dicatat resmi ke sistem presensi sekolah.',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Mengerti'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.message),
+            backgroundColor: const Color(0xFFFF3B30),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan: $e'),
+          backgroundColor: const Color(0xFFFF3B30),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
@@ -285,20 +342,23 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _handleSubmit,
+                      onPressed: _isSubmitting ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF007AFF),
                         foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFF007AFF).withOpacity(0.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),
-                      child: Text(
-                        'Kirim Pengajuan $_jenis',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      child: _isSubmitting
+                          ? const CupertinoActivityIndicator(color: Colors.white, radius: 9)
+                          : Text(
+                              'Kirim Pengajuan $_jenis',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                     ),
                   ),
 
