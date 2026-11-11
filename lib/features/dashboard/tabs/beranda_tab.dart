@@ -7,6 +7,7 @@ import '../../../../core/models/dashboard_full_model.dart';
 import '../../../../core/models/session_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/services/location_service.dart';
+import '../dialogs/classmate_detail_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
 import '../widgets/jadwal_pelajaran_widget.dart';
 
@@ -125,9 +126,18 @@ class _BerandaTabState extends State<BerandaTab> {
               .animate()
               .fadeIn(duration: 400.ms, delay: 100.ms, curve: Curves.easeOutCubic),
 
+          // ── 4. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW) ──
+          if (widget.data.temanSekelas.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildTemanSekelasStoryRow(user)
+                .animate()
+                .fadeIn(duration: 400.ms, delay: 120.ms, curve: Curves.easeOutCubic)
+                .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 120.ms, curve: Curves.easeOutCubic),
+          ],
+
           const SizedBox(height: 16),
 
-          // ── 4. JADWAL PELAJARAN HARI INI ──
+          // ── 5. JADWAL PELAJARAN HARI INI ──
           JadwalPelajaranWidget(
             activeSession: sesi,
             namaKelas: user.kelas,
@@ -521,6 +531,97 @@ class _BerandaTabState extends State<BerandaTab> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ] else if (!user.isFaceEnrolled) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.exclamationmark_triangle_fill,
+                      color: Color(0xFFD97706),
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Wajib Rekam Wajah Terlebih Dahulu',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF78350F),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Biometrik wajah belum terdaftar. Rekam wajah sekali untuk mulai presensi.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF92400E),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: widget.onOpenEnrollment ?? widget.onOpenScanner,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD97706),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD97706).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.camera_fill,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Rekam Wajah Sekarang →',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ] else ...[
@@ -1028,6 +1129,281 @@ class _BerandaTabState extends State<BerandaTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  4. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW)
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildTemanSekelasStoryRow(UserModel user) {
+    final list = widget.data.temanSekelas;
+    if (list.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: "Teman Sekelas (N)" + "Lihat Semua ->"
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        CupertinoIcons.person_2_fill,
+                        size: 14,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    RichText(
+                      text: TextSpan(
+                        text: 'Teman Sekelas ',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '(${list.length})',
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    widget.onOpenTeman();
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Lihat Semua',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 11,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Horizontal Story Row
+          SizedBox(
+            height: 90,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: list.length + 1, // +1 for "Profilku"
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  // Profilku story circle
+                  return GestureDetector(
+                    onTap: _openEditProfile,
+                    child: SizedBox(
+                      width: 68,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFEFF6FF),
+                              border: Border.all(
+                                color: const Color(0xFF60A5FA),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                CupertinoIcons.add,
+                                color: Color(0xFF2563EB),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Profilku',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final friend = list[index - 1];
+                final isHadir = friend.statusHariIni.toLowerCase() == 'hadir';
+                final isIzin = friend.statusHariIni.toLowerCase() == 'izin';
+                final isSakit = friend.statusHariIni.toLowerCase() == 'sakit';
+                final avatarUrl = _formatAvatarUrl(friend.avatar);
+                final shortName = friend.nama.trim().split(' ').first;
+
+                Color ringColor;
+                Color dotColor;
+                if (isHadir) {
+                  ringColor = const Color(0xFF10B981);
+                  dotColor = const Color(0xFF10B981);
+                } else if (isIzin) {
+                  ringColor = const Color(0xFFF59E0B);
+                  dotColor = const Color(0xFFF59E0B);
+                } else if (isSakit) {
+                  ringColor = const Color(0xFF0EA5E9);
+                  dotColor = const Color(0xFF0EA5E9);
+                } else {
+                  ringColor = const Color(0xFFCBD5E1);
+                  dotColor = const Color(0xFF94A3B8);
+                }
+
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ClassmateDetailDialog.show(
+                      context,
+                      classmate: friend,
+                      kelasNama: user.kelas,
+                    );
+                  },
+                  child: SizedBox(
+                    width: 68,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: ringColor,
+                                  width: isHadir ? 2.5 : 1.5,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(2),
+                              child: ClipOval(
+                                child: avatarUrl.isNotEmpty
+                                    ? Image.network(
+                                        avatarUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            _buildFriendFallback(friend.nama),
+                                      )
+                                    : _buildFriendFallback(friend.nama),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 1,
+                              right: 1,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: dotColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _toTitleCase(shortName),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendFallback(String name) {
+    final initials = _getInitials(name);
+    return Container(
+      color: const Color(0xFFEFF6FF),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF2563EB),
+        ),
       ),
     );
   }

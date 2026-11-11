@@ -324,7 +324,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onRefreshLocation: _refreshLocation,
                     onProfileUpdated: _handleProfileUpdated,
                   ),
-                  KehadiranTab(data: _data!),
+                  KehadiranTab(
+                    data: _data!,
+                    onOpenRekap: _openRekapModal,
+                  ),
                   TemanTab(data: _data!),
                   ProfilTab(
                     data: _data!,

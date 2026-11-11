@@ -7,7 +7,6 @@ import '../../core/models/dashboard_full_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../auth/login_screen.dart';
-import '../auth/onboarding_password_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -77,8 +76,6 @@ class _SplashScreenState extends State<SplashScreen>
     Widget destination;
     if (!loggedIn || user == null) {
       destination = const LoginScreen();
-    } else if (!user.hasChangedPassword) {
-      destination = OnboardingPasswordScreen(user: user);
     } else {
       destination = DashboardScreen(initialData: _preloadedDashboardData);
     }

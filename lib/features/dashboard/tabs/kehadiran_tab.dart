@@ -7,8 +7,13 @@ import '../../../core/models/dashboard_full_model.dart';
 
 class KehadiranTab extends StatefulWidget {
   final DashboardFullModel data;
+  final VoidCallback? onOpenRekap;
 
-  const KehadiranTab({super.key, required this.data});
+  const KehadiranTab({
+    super.key,
+    required this.data,
+    this.onOpenRekap,
+  });
 
   @override
   State<KehadiranTab> createState() => _KehadiranTabState();
@@ -183,6 +188,43 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     _buildMetricDivider(),
                     _buildMetricColumn('Alpa', '${stats.alpa}', const Color(0xFFEF4444)),
                   ],
+                ),
+
+                const SizedBox(height: 14),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 10),
+
+                // ── Lihat Rekap Lengkap Presensi Action ──
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    if (widget.onOpenRekap != null) {
+                      widget.onOpenRekap!();
+                    }
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          CupertinoIcons.doc_text_search,
+                          size: 15,
+                          color: Color(0xFF2563EB),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Lihat Rekap Lengkap Presensi →',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

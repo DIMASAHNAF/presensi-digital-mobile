@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/services/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
-import 'onboarding_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,20 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (res.success && res.data != null) {
-        final user = res.data!;
         HapticFeedback.mediumImpact();
-
-        if (!user.hasChangedPassword) {
-          Navigator.of(context).pushReplacement(
-            CupertinoPageRoute(
-              builder: (_) => OnboardingPasswordScreen(user: user),
-            ),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            CupertinoPageRoute(builder: (_) => const DashboardScreen()),
-          );
-        }
+        Navigator.of(context).pushReplacement(
+          CupertinoPageRoute(builder: (_) => const DashboardScreen()),
+        );
       } else {
         HapticFeedback.heavyImpact();
         setState(() {
