@@ -461,86 +461,8 @@ class _BerandaTabState extends State<BerandaTab> {
 
           const SizedBox(height: 14),
 
-          // Widget Peta Presensi (Tinggi ~145px)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 145,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/map_campus_v2.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/map_campus.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.65),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.25), width: 0.8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            CupertinoIcons.shield_fill,
-                            size: 12,
-                            color: Color(0xFF34D399),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'SMKN 1 Beringin • Radius 110m',
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (widget.onRefreshLocation != null)
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: widget.onRefreshLocation,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            CupertinoIcons.location_fill,
-                            size: 16,
-                            color: Color(0xFF2563EB),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          // Widget Peta Presensi Interaktif dengan Animasi Radar Pulse
+          _buildMapWidget(),
 
           const SizedBox(height: 14),
 
@@ -641,39 +563,366 @@ class _BerandaTabState extends State<BerandaTab> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 8),
+  // ═══════════════════════════════════════════════════════════
+  //  2B. WIDGET PETA DENGAN ANIMASI PULSING RADAR (Gaya Mekari Talenta)
+  // ═══════════════════════════════════════════════════════════
 
-          // Tombol Sekunder: Ajukan Surat Izin / Sakit
-          GestureDetector(
-            onTap: widget.onOpenIzinSakit,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+  Widget _buildMapWidget() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        height: 148,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background Visual Peta Kampus
+            Image.asset(
+              'assets/images/map_campus_v2.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'assets/images/map_campus.png',
+                fit: BoxFit.cover,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            ),
+
+            // Pin Marker Sekolah di Tengah Peta dengan Animasi Radar Pulse
+            Center(
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  const Icon(
-                    CupertinoIcons.doc_text,
-                    size: 15,
-                    color: Color(0xFF64748B),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Ajukan Surat Izin / Sakit',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF475569),
+                  // Pulse Ripple Ring 1 (Continuous Wave)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF2563EB).withOpacity(0.35),
+                    ),
+                  )
+                      .animate(onPlay: (c) => c.repeat())
+                      .scale(
+                        begin: const Offset(0.9, 0.9),
+                        end: const Offset(2.4, 2.4),
+                        duration: 1600.ms,
+                        curve: Curves.easeOut,
+                      )
+                      .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+
+                  // Pulse Ripple Ring 2 (Delayed Secondary Wave)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF2563EB).withOpacity(0.25),
+                    ),
+                  )
+                      .animate(
+                        onPlay: (c) => c.repeat(),
+                        delay: 800.ms,
+                      )
+                      .scale(
+                        begin: const Offset(0.9, 0.9),
+                        end: const Offset(2.4, 2.4),
+                        duration: 1600.ms,
+                        curve: Curves.easeOut,
+                      )
+                      .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+
+                  // Pin Sekolah Inti
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.school_rounded,
+                      size: 15,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
+            ),
+
+            // Floating Badge Atas-Tengah: Status Geofence Valid / Warning
+            Positioned(
+              top: 10,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _buildMapStatusBadge(),
+              ),
+            ),
+
+            // Floating Badge Kiri-Bawah: Info Radius Sekolah
+            Positioned(
+              bottom: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.25),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.shield_fill,
+                      size: 12,
+                      color: Color(0xFF34D399),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'SMKN 1 Beringin • Radius 110m',
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Floating Button Kanan-Bawah: Refresh Lokasi GPS
+            if (widget.onRefreshLocation != null)
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onRefreshLocation!();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.location_fill,
+                      size: 16,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapStatusBadge() {
+    final geo = widget.geofenceResult;
+
+    if (geo == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: const Color(0xFFBFDBFE)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 10,
+              height: 10,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: Color(0xFF2563EB),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Mengunci Titik GPS...',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF2563EB),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (geo.isMocked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: const Color(0xFFFECDD3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              CupertinoIcons.clear_circled_solid,
+              size: 11,
+              color: Color(0xFFE11D48),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Fake GPS Terdeteksi',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFE11D48),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (geo.errorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              CupertinoIcons.location,
+              size: 11,
+              color: Color(0xFF64748B),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'GPS Belum Akurat',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (geo.isInside) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: const Color(0xFF86EFAC)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              CupertinoIcons.checkmark_alt_circle_fill,
+              size: 11,
+              color: Color(0xFF16A34A),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Area Valid • ${geo.distanceMeters.toStringAsFixed(0)}m',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF16A34A),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            CupertinoIcons.location_solid,
+            size: 11,
+            color: Color(0xFFD97706),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Di Luar Area • ${geo.distanceMeters.toStringAsFixed(0)}m',
+            style: GoogleFonts.inter(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFD97706),
             ),
           ),
         ],
@@ -682,20 +931,20 @@ class _BerandaTabState extends State<BerandaTab> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  3. 4-COLUMN QUICK ACTION BAR
+  //  3. 4-COLUMN QUICK ACTION BAR (Sesuai Desain Asli)
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildQuickActionBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.03),
-            blurRadius: 10,
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 12,
             offset: const Offset(0, 2),
           ),
         ],
@@ -706,19 +955,22 @@ class _BerandaTabState extends State<BerandaTab> {
           _buildQuickActionItem(
             icon: CupertinoIcons.calendar_today,
             label: 'Kehadiran',
-            color: const Color(0xFF2563EB),
+            bgColor: const Color(0xFFEFF6FF), // soft blue-50
+            iconColor: const Color(0xFF2563EB), // blue-600
             onTap: widget.onOpenKehadiran,
           ),
           _buildQuickActionItem(
             icon: CupertinoIcons.person_2_fill,
             label: 'Teman',
-            color: const Color(0xFF7C3AED),
+            bgColor: const Color(0xFFEEF2FF), // soft indigo-50
+            iconColor: const Color(0xFF4F46E5), // indigo-600
             onTap: widget.onOpenTeman,
           ),
           _buildQuickActionItem(
             icon: CupertinoIcons.location_solid,
             label: 'Cek Lokasi',
-            color: const Color(0xFF059669),
+            bgColor: const Color(0xFFECFDF5), // soft emerald-50
+            iconColor: const Color(0xFF059669), // emerald-600
             onTap: () {
               if (widget.onRefreshLocation != null) {
                 widget.onRefreshLocation!();
@@ -728,7 +980,8 @@ class _BerandaTabState extends State<BerandaTab> {
           _buildQuickActionItem(
             icon: CupertinoIcons.book_fill,
             label: 'Panduan',
-            color: const Color(0xFFD97706),
+            bgColor: const Color(0xFFFFFBEB), // soft amber-50
+            iconColor: const Color(0xFFD97706), // amber-600
             onTap: () {
               if (widget.onOpenPanduan != null) {
                 widget.onOpenPanduan!();
@@ -743,7 +996,8 @@ class _BerandaTabState extends State<BerandaTab> {
   Widget _buildQuickActionItem({
     required IconData icon,
     required String label,
-    required Color color,
+    required Color bgColor,
+    required Color iconColor,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -756,20 +1010,20 @@ class _BerandaTabState extends State<BerandaTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(14),
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, size: 20, color: color),
+            child: Icon(icon, size: 21, color: iconColor),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           Text(
             label,
             style: GoogleFonts.inter(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: const Color(0xFF475569),
             ),
           ),
