@@ -66,10 +66,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startLaunchSequence() async {
-    try {
-      HapticFeedback.lightImpact();
-    } catch (_) {}
-
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
