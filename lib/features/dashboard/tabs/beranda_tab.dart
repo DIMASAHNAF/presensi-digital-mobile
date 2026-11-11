@@ -52,7 +52,7 @@ class BerandaTab extends StatefulWidget {
 }
 
 class _BerandaTabState extends State<BerandaTab>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
 
@@ -61,17 +61,19 @@ class _BerandaTabState extends State<BerandaTab>
   late Animation<double> _shadowScaleAnimation;
   late Animation<double> _shadowOpacityAnimation;
 
+  late AnimationController _rippleController;
+
   @override
   void initState() {
     super.initState();
-    // Animasi lompat-lompat berulang (bouncing pin)
+    // Animasi lompat-lompat berulang (bouncing pin jump)
     _jumpController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 620),
+      duration: const Duration(milliseconds: 650),
     )..repeat(reverse: true);
 
-    // Perpindahan vertikal (naik 20px lalu turun kembali)
-    _jumpAnimation = Tween<double>(begin: 0.0, end: -20.0).animate(
+    // Perpindahan vertikal (naik 24px lalu turun kembali secara ritmis)
+    _jumpAnimation = Tween<double>(begin: 0.0, end: -24.0).animate(
       CurvedAnimation(
         parent: _jumpController,
         curve: Curves.easeOutCubic,
@@ -80,7 +82,7 @@ class _BerandaTabState extends State<BerandaTab>
     );
 
     // Bayangan di tanah mengecil saat pin terangkat ke udara
-    _shadowScaleAnimation = Tween<double>(begin: 1.0, end: 0.42).animate(
+    _shadowScaleAnimation = Tween<double>(begin: 1.0, end: 0.35).animate(
       CurvedAnimation(
         parent: _jumpController,
         curve: Curves.easeOutCubic,
@@ -89,18 +91,25 @@ class _BerandaTabState extends State<BerandaTab>
     );
 
     // Bayangan di tanah memudar saat pin semakin tinggi
-    _shadowOpacityAnimation = Tween<double>(begin: 0.45, end: 0.10).animate(
+    _shadowOpacityAnimation = Tween<double>(begin: 0.45, end: 0.08).animate(
       CurvedAnimation(
         parent: _jumpController,
         curve: Curves.easeOutCubic,
         reverseCurve: Curves.easeInCubic,
       ),
     );
+
+    // Animasi gelombang radar pulsa continuous
+    _rippleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _jumpController.dispose();
+    _rippleController.dispose();
     super.dispose();
   }
 
@@ -743,101 +752,138 @@ class _BerandaTabState extends State<BerandaTab>
 
             // Pin Marker Sekolah di Tengah Peta dengan Animasi Lompat-Lompat & Radar Pulse
             Center(
-              child: AnimatedBuilder(
-                animation: _jumpController,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      // 1. Pulse Ripple Ring 1 (Continuous Wave)
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF2563EB).withOpacity(0.35),
-                        ),
-                      )
-                          .animate(onPlay: (c) => c.repeat())
-                          .scale(
-                            begin: const Offset(0.9, 0.9),
-                            end: const Offset(2.6, 2.6),
-                            duration: 1600.ms,
-                            curve: Curves.easeOut,
-                          )
-                          .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+              child: SizedBox(
+                width: 140,
+                height: 140,
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    // 1. Dual Radar Ripple Waves (Mekar Melebar Halus 60fps)
+                    AnimatedBuilder(
+                      animation: _rippleController,
+                      builder: (context, _) {
+                        final p1 = _rippleController.value;
+                        final p2 = (_rippleController.value + 0.5) % 1.0;
 
-                      // 2. Pulse Ripple Ring 2 (Delayed Secondary Wave)
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF2563EB).withOpacity(0.25),
-                        ),
-                      )
-                          .animate(
-                            onPlay: (c) => c.repeat(),
-                            delay: 800.ms,
-                          )
-                          .scale(
-                            begin: const Offset(0.9, 0.9),
-                            end: const Offset(2.6, 2.6),
-                            duration: 1600.ms,
-                            curve: Curves.easeOut,
-                          )
-                          .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+                        final scale1 = 0.6 + (p1 * 2.0); // 0.6 to 2.6
+                        final opacity1 = (1.0 - p1).clamp(0.0, 1.0) * 0.45;
 
-                      // 3. Bayangan Kontak di Tanah (Mengecil & Memudar saat Pin Melompat ke Udara)
-                      Transform.translate(
-                        offset: const Offset(0, 16),
-                        child: Transform.scale(
-                          scaleX: _shadowScaleAnimation.value,
-                          scaleY: _shadowScaleAnimation.value * 0.65,
-                          child: Container(
-                            width: 24,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
-                              borderRadius: const BorderRadius.all(Radius.elliptical(24, 8)),
+                        final scale2 = 0.6 + (p2 * 2.0); // 0.6 to 2.6
+                        final opacity2 = (1.0 - p2).clamp(0.0, 1.0) * 0.35;
+
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Transform.scale(
+                              scale: scale1,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF2563EB).withOpacity(opacity1 * 0.35),
+                                  border: Border.all(
+                                    color: const Color(0xFF3B82F6).withOpacity(opacity1),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: scale2,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF2563EB).withOpacity(opacity2 * 0.35),
+                                  border: Border.all(
+                                    color: const Color(0xFF3B82F6).withOpacity(opacity2),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // 2. Bayangan Kontak di Tanah (Mengecil & Memudar saat Pin Melompat)
+                    AnimatedBuilder(
+                      animation: _jumpController,
+                      builder: (context, _) {
+                        return Transform.translate(
+                          offset: const Offset(0, 18),
+                          child: Transform.scale(
+                            scaleX: _shadowScaleAnimation.value,
+                            scaleY: _shadowScaleAnimation.value * 0.65,
+                            child: Container(
+                              width: 26,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
+                                borderRadius: const BorderRadius.all(Radius.elliptical(26, 9)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
+                    ),
 
-                      // 4. Pin Sekolah yang Lompat-Lompat Naik Turun (Bouncing Pin Icon)
-                      Transform.translate(
-                        offset: Offset(0, _jumpAnimation.value),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF1D4ED8).withOpacity(0.45),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                    // 3. Pin Sekolah yang Lompat-Lompat Naik Turun (Bouncing Pin Icon)
+                    AnimatedBuilder(
+                      animation: _jumpController,
+                      builder: (context, _) {
+                        return Transform.translate(
+                          offset: Offset(0, _jumpAnimation.value),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF1D4ED8).withOpacity(0.55),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.school_rounded,
+                                  size: 17,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              CustomPaint(
+                                size: const Size(8, 4),
+                                painter: _PinArrowPainter(),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.school_rounded,
-                            size: 17,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -1486,4 +1532,24 @@ class _BerandaTabState extends State<BerandaTab>
       ),
     );
   }
+}
+
+class _PinArrowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF1D4ED8)
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
