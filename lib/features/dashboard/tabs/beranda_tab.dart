@@ -51,9 +51,58 @@ class BerandaTab extends StatefulWidget {
   State<BerandaTab> createState() => _BerandaTabState();
 }
 
-class _BerandaTabState extends State<BerandaTab> {
+class _BerandaTabState extends State<BerandaTab>
+    with SingleTickerProviderStateMixin {
   static const String _storageBase =
       'https://presensi.smknegeri1beringin.sch.id/storage/';
+
+  late AnimationController _jumpController;
+  late Animation<double> _jumpAnimation;
+  late Animation<double> _shadowScaleAnimation;
+  late Animation<double> _shadowOpacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animasi lompat-lompat berulang (bouncing pin)
+    _jumpController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    )..repeat(reverse: true);
+
+    // Perpindahan vertikal (naik 20px lalu turun kembali)
+    _jumpAnimation = Tween<double>(begin: 0.0, end: -20.0).animate(
+      CurvedAnimation(
+        parent: _jumpController,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+
+    // Bayangan di tanah mengecil saat pin terangkat ke udara
+    _shadowScaleAnimation = Tween<double>(begin: 1.0, end: 0.42).animate(
+      CurvedAnimation(
+        parent: _jumpController,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+
+    // Bayangan di tanah memudar saat pin semakin tinggi
+    _shadowOpacityAnimation = Tween<double>(begin: 0.45, end: 0.10).animate(
+      CurvedAnimation(
+        parent: _jumpController,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _jumpController.dispose();
+    super.dispose();
+  }
 
   void _openEditProfile() {
     HapticFeedback.lightImpact();
@@ -692,73 +741,103 @@ class _BerandaTabState extends State<BerandaTab> {
               ),
             ),
 
-            // Pin Marker Sekolah di Tengah Peta dengan Animasi Radar Pulse
+            // Pin Marker Sekolah di Tengah Peta dengan Animasi Lompat-Lompat & Radar Pulse
             Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Pulse Ripple Ring 1 (Continuous Wave)
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF2563EB).withOpacity(0.35),
-                    ),
-                  )
-                      .animate(onPlay: (c) => c.repeat())
-                      .scale(
-                        begin: const Offset(0.9, 0.9),
-                        end: const Offset(2.4, 2.4),
-                        duration: 1600.ms,
-                        curve: Curves.easeOut,
-                      )
-                      .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
-
-                  // Pulse Ripple Ring 2 (Delayed Secondary Wave)
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF2563EB).withOpacity(0.25),
-                    ),
-                  )
-                      .animate(
-                        onPlay: (c) => c.repeat(),
-                        delay: 800.ms,
-                      )
-                      .scale(
-                        begin: const Offset(0.9, 0.9),
-                        end: const Offset(2.4, 2.4),
-                        duration: 1600.ms,
-                        curve: Curves.easeOut,
-                      )
-                      .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
-
-                  // Pin Sekolah Inti
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+              child: AnimatedBuilder(
+                animation: _jumpController,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      // 1. Pulse Ripple Ring 1 (Continuous Wave)
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF2563EB).withOpacity(0.35),
                         ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.school_rounded,
-                      size: 15,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                      )
+                          .animate(onPlay: (c) => c.repeat())
+                          .scale(
+                            begin: const Offset(0.9, 0.9),
+                            end: const Offset(2.6, 2.6),
+                            duration: 1600.ms,
+                            curve: Curves.easeOut,
+                          )
+                          .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+
+                      // 2. Pulse Ripple Ring 2 (Delayed Secondary Wave)
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF2563EB).withOpacity(0.25),
+                        ),
+                      )
+                          .animate(
+                            onPlay: (c) => c.repeat(),
+                            delay: 800.ms,
+                          )
+                          .scale(
+                            begin: const Offset(0.9, 0.9),
+                            end: const Offset(2.6, 2.6),
+                            duration: 1600.ms,
+                            curve: Curves.easeOut,
+                          )
+                          .fadeOut(duration: 1600.ms, curve: Curves.easeOut),
+
+                      // 3. Bayangan Kontak di Tanah (Mengecil & Memudar saat Pin Melompat ke Udara)
+                      Transform.translate(
+                        offset: const Offset(0, 16),
+                        child: Transform.scale(
+                          scaleX: _shadowScaleAnimation.value,
+                          scaleY: _shadowScaleAnimation.value * 0.65,
+                          child: Container(
+                            width: 24,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
+                              borderRadius: const BorderRadius.all(Radius.elliptical(24, 8)),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // 4. Pin Sekolah yang Lompat-Lompat Naik Turun (Bouncing Pin Icon)
+                      Transform.translate(
+                        offset: Offset(0, _jumpAnimation.value),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1D4ED8).withOpacity(0.45),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.school_rounded,
+                            size: 17,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
