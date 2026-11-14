@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/services/api_service.dart';
+import '../../../core/theme/app_theme.dart';
 
 class ChangePasswordDialog extends StatefulWidget {
   const ChangePasswordDialog({super.key});
@@ -72,9 +73,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(
+                 Icon(
                   CupertinoIcons.checkmark_circle_fill,
-                  color: Color(0xFF34C759),
+                  color: AppColors.success,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -93,7 +94,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            backgroundColor: const Color(0xFF1C1C1E),
+            backgroundColor: AppColors.primaryDeep,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -127,29 +128,29 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutQuad,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFF2F2F7), // Apple System Grouped Background
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration:  BoxDecoration(
+          color: AppColors.background, // Apple System Grouped Background
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
           top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Top Pill Drag Indicator ──
+              //  Top Pill Drag Indicator
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
                   width: 38,
                   height: 4.5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC7C7CC),
+                    color:  AppColors.textQuaternary,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
               ),
 
-              // ── Header Bar ──
+              //  Header Bar
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -159,13 +160,13 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF007AFF).withOpacity(0.12),
+                        color:  AppColors.primaryBlue.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child:  Center(
                         child: Icon(
                           CupertinoIcons.lock_shield_fill,
-                          color: Color(0xFF007AFF),
+                          color: AppColors.primaryBlue,
                           size: 22,
                         ),
                       ),
@@ -180,7 +181,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                             style: GoogleFonts.inter(
                               fontSize: 16.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1C1C1E),
+                              color:  AppColors.primaryDark,
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -188,7 +189,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                             'Perbarui kata sandi akun siswa Anda',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: const Color(0xFF8E8E93),
+                              color:  AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -200,15 +201,15 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                       child: Container(
                         width: 32,
                         height: 32,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE5E5EA),
+                        decoration:  BoxDecoration(
+                          color: AppColors.border,
                           shape: BoxShape.circle,
                         ),
-                        child: const Center(
+                        child:  Center(
                           child: Icon(
                             CupertinoIcons.xmark,
                             size: 14,
-                            color: Color(0xFF8E8E93),
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ),
@@ -217,7 +218,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 ),
               ),
 
-              const Divider(height: 1, color: Color(0xFFE5E5EA)),
+               Divider(height: 1, color: AppColors.border),
 
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -226,23 +227,23 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Error Banner ──
+                      //  Error Banner
                       if (_errorMessage != null) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEB),
+                            color:  AppColors.dangerBg,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFFFF3B30).withOpacity(0.3),
+                              color:  AppColors.danger.withOpacity(0.3),
                             ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                               Icon(
                                 CupertinoIcons.exclamationmark_circle_fill,
-                                color: Color(0xFFFF3B30),
+                                color: AppColors.danger,
                                 size: 16,
                               ),
                               const SizedBox(width: 8),
@@ -251,7 +252,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                                   _errorMessage!,
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: const Color(0xFFFF3B30),
+                                    color:  AppColors.danger,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -265,13 +266,13 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                         const SizedBox(height: 14),
                       ],
 
-                      // ── Grouped Input Box ──
+                      //  Grouped Input Box
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: const Color(0xFFE5E5EA),
+                            color:  AppColors.border,
                             width: 0.8,
                           ),
                         ),
@@ -291,12 +292,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                               decoration: InputDecoration(
                                 hintText: 'Kata Sandi Baru (Min. 6 Karakter)',
                                 hintStyle: GoogleFonts.inter(
-                                  color: const Color(0xFFC7C7CC),
+                                  color:  AppColors.textQuaternary,
                                   fontSize: 13,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon:  Icon(
                                   CupertinoIcons.lock_fill,
-                                  color: Color(0xFF8E8E93),
+                                  color: AppColors.textMuted,
                                   size: 18,
                                 ),
                                 suffixIcon: GestureDetector(
@@ -307,7 +308,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                                     _obscurePassword
                                         ? CupertinoIcons.eye_slash
                                         : CupertinoIcons.eye,
-                                    color: const Color(0xFF8E8E93),
+                                    color:  AppColors.textMuted,
                                     size: 18,
                                   ),
                                 ),
@@ -325,10 +326,10 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                               },
                             ),
 
-                            const Divider(
+                             Divider(
                                 height: 1,
                                 indent: 44,
-                                color: Color(0xFFF2F2F7)),
+                                color: AppColors.background),
 
                             // Confirm Field
                             TextFormField(
@@ -345,12 +346,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                               decoration: InputDecoration(
                                 hintText: 'Ulangi Kata Sandi Baru',
                                 hintStyle: GoogleFonts.inter(
-                                  color: const Color(0xFFC7C7CC),
+                                  color:  AppColors.textQuaternary,
                                   fontSize: 13,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon:  Icon(
                                   CupertinoIcons.checkmark_shield_fill,
-                                  color: Color(0xFF8E8E93),
+                                  color: AppColors.textMuted,
                                   size: 18,
                                 ),
                                 suffixIcon: GestureDetector(
@@ -361,7 +362,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                                     _obscureConfirm
                                         ? CupertinoIcons.eye_slash
                                         : CupertinoIcons.eye,
-                                    color: const Color(0xFF8E8E93),
+                                    color:  AppColors.textMuted,
                                     size: 18,
                                   ),
                                 ),
@@ -387,7 +388,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
                       const SizedBox(height: 14),
 
-                      // ── Validation Checklist ──
+                      //  Validation Checklist
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Column(
@@ -407,14 +408,14 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
                       const SizedBox(height: 22),
 
-                      // ── Action Buttons ──
+                      //  Action Buttons
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleSave,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF007AFF),
+                          backgroundColor:  AppColors.primaryBlue,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor:
-                              const Color(0xFF007AFF).withOpacity(0.5),
+                               AppColors.primaryBlue.withOpacity(0.5),
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
@@ -453,14 +454,14 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               ? CupertinoIcons.checkmark_circle_fill
               : CupertinoIcons.circle,
           size: 14,
-          color: isValid ? const Color(0xFF34C759) : const Color(0xFFC7C7CC),
+          color: isValid ?  AppColors.success :  AppColors.textQuaternary,
         ),
         const SizedBox(width: 8),
         Text(
           text,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: isValid ? const Color(0xFF34C759) : const Color(0xFF8E8E93),
+            color: isValid ?  AppColors.success :  AppColors.textMuted,
             fontWeight: isValid ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

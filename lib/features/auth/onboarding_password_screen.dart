@@ -7,8 +7,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/models/user_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
-import '../dashboard/dashboard_screen.dart';
+import 'auth_router.dart';
 import 'login_screen.dart';
+import '../../core/theme/app_theme.dart';
 
 class OnboardingPasswordScreen extends StatefulWidget {
   final UserModel user;
@@ -64,9 +65,11 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
 
       if (res.success) {
         HapticFeedback.mediumImpact();
+        final updatedUser = res.data ?? widget.user.copyWith(hasChangedPassword: true);
         Navigator.of(context).pushReplacement(
           CupertinoPageRoute(
-            builder: (_) => const DashboardScreen(),
+            builder: (_) =>
+                buildAuthDestination(resolveAuthStep(updatedUser), updatedUser),
           ),
         );
       } else {
@@ -127,7 +130,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
     final displayName = widget.user.name.split(' ').first;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7), // Apple System Grouped Background
+      backgroundColor:  AppColors.background, // Apple System Grouped Background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -145,7 +148,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
               ),
             ),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF8E8E93),
+              foregroundColor:  AppColors.textMuted,
               padding: const EdgeInsets.only(right: 16),
             ),
           ),
@@ -163,26 +166,26 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Onboarding Stepper Header ──
+                    //  Onboarding Stepper Header
                     _buildStepperHeader(),
 
                     const SizedBox(height: 28),
 
-                    // ── Header Icon & Title ──
+                    //  Header Icon & Title
                     Center(
                       child: Container(
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF007AFF), Color(0xFF0051A8)],
+                          gradient:  LinearGradient(
+                            colors: [AppColors.primaryBlue,  AppColors.primaryBlue],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF007AFF).withOpacity(0.35),
+                              color:  AppColors.primaryBlue.withOpacity(0.35),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -209,7 +212,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1C1C1E),
+                        color:  AppColors.primaryDark,
                         letterSpacing: -0.6,
                       ),
                     ).animate(delay: 100.ms).fadeIn(duration: 350.ms),
@@ -221,30 +224,30 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 13.5,
-                        color: const Color(0xFF8E8E93),
+                        color:  AppColors.textMuted,
                         height: 1.45,
                       ),
                     ).animate(delay: 200.ms).fadeIn(duration: 350.ms),
 
                     const SizedBox(height: 24),
 
-                    // ── Error Banner ──
+                    //  Error Banner
                     if (_errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEBEB),
+                          color:  AppColors.dangerBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFFFF3B30).withOpacity(0.3),
+                            color:  AppColors.danger.withOpacity(0.3),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                             Icon(
                               CupertinoIcons.exclamationmark_circle_fill,
-                              color: Color(0xFFFF3B30),
+                              color: AppColors.danger,
                               size: 18,
                             ),
                             const SizedBox(width: 10),
@@ -253,7 +256,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                                 _errorMessage!,
                                 style: GoogleFonts.inter(
                                   fontSize: 12.5,
-                                  color: const Color(0xFFFF3B30),
+                                  color:  AppColors.danger,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -267,13 +270,13 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                       const SizedBox(height: 18),
                     ],
 
-                    // ── Grouped Input Fields Card ──
+                    //  Grouped Input Fields Card
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(0xFFE5E5EA),
+                          color:  AppColors.border,
                           width: 0.8,
                         ),
                         boxShadow: [
@@ -300,12 +303,12 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                             decoration: InputDecoration(
                               hintText: 'Kata Sandi Baru (Min. 6 Karakter)',
                               hintStyle: GoogleFonts.inter(
-                                color: const Color(0xFFC7C7CC),
+                                color:  AppColors.textQuaternary,
                                 fontSize: 13.5,
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon:  Icon(
                                 CupertinoIcons.lock_fill,
-                                color: Color(0xFF8E8E93),
+                                color: AppColors.textMuted,
                                 size: 19,
                               ),
                               suffixIcon: GestureDetector(
@@ -316,7 +319,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                                   _obscurePassword
                                       ? CupertinoIcons.eye_slash
                                       : CupertinoIcons.eye,
-                                  color: const Color(0xFF8E8E93),
+                                  color:  AppColors.textMuted,
                                   size: 19,
                                 ),
                               ),
@@ -334,8 +337,8 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                             },
                           ),
 
-                          const Divider(
-                              height: 1, indent: 48, color: Color(0xFFF2F2F7)),
+                           Divider(
+                              height: 1, indent: 48, color: AppColors.background),
 
                           // Confirm Password Field
                           TextFormField(
@@ -352,12 +355,12 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                             decoration: InputDecoration(
                               hintText: 'Ulangi Kata Sandi Baru',
                               hintStyle: GoogleFonts.inter(
-                                color: const Color(0xFFC7C7CC),
+                                color:  AppColors.textQuaternary,
                                 fontSize: 13.5,
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon:  Icon(
                                 CupertinoIcons.checkmark_shield_fill,
-                                color: Color(0xFF8E8E93),
+                                color: AppColors.textMuted,
                                 size: 19,
                               ),
                               suffixIcon: GestureDetector(
@@ -368,7 +371,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                                   _obscureConfirm
                                       ? CupertinoIcons.eye_slash
                                       : CupertinoIcons.eye,
-                                  color: const Color(0xFF8E8E93),
+                                  color:  AppColors.textMuted,
                                   size: 19,
                                 ),
                               ),
@@ -394,7 +397,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ── Criteria Checklist ──
+                    //  Criteria Checklist
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Column(
@@ -414,14 +417,14 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
 
                     const SizedBox(height: 28),
 
-                    // ── Submit Button ──
+                    //  Submit Button
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007AFF),
+                        backgroundColor:  AppColors.primaryBlue,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor:
-                            const Color(0xFF007AFF).withOpacity(0.5),
+                             AppColors.primaryBlue.withOpacity(0.5),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -463,7 +466,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                         'Langkah 1 dari 2: Pengaturan Keamanan Akun',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF8E8E93),
+                          color:  AppColors.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -491,8 +494,8 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                   Container(
                     width: 22,
                     height: 22,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF007AFF),
+                    decoration:  BoxDecoration(
+                      color: AppColors.primaryBlue,
                       shape: BoxShape.circle,
                     ),
                     child: const Center(
@@ -512,7 +515,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF007AFF),
+                      color:  AppColors.primaryBlue,
                     ),
                   ),
                 ],
@@ -521,7 +524,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
               Container(
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF007AFF),
+                  color:  AppColors.primaryBlue,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -539,15 +542,15 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                   Container(
                     width: 22,
                     height: 22,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE5E5EA),
+                    decoration:  BoxDecoration(
+                      color: AppColors.border,
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child:  Center(
                       child: Text(
                         '2',
                         style: TextStyle(
-                          color: Color(0xFF8E8E93),
+                          color: AppColors.textMuted,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -560,7 +563,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF8E8E93),
+                      color:  AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -569,7 +572,7 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
               Container(
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E5EA),
+                  color:  AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -588,14 +591,14 @@ class _OnboardingPasswordScreenState extends State<OnboardingPasswordScreen> {
               ? CupertinoIcons.checkmark_circle_fill
               : CupertinoIcons.circle,
           size: 15,
-          color: isValid ? const Color(0xFF34C759) : const Color(0xFFC7C7CC),
+          color: isValid ?  AppColors.success :  AppColors.textQuaternary,
         ),
         const SizedBox(width: 8),
         Text(
           text,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: isValid ? const Color(0xFF34C759) : const Color(0xFF8E8E93),
+            color: isValid ?  AppColors.success :  AppColors.textMuted,
             fontWeight: isValid ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

@@ -11,6 +11,7 @@ import '../../core/models/user_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/services/scan_queue_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/login_screen.dart';
 import '../scanner/scanner_screen.dart';
@@ -22,10 +23,8 @@ import 'tabs/kehadiran_tab.dart';
 import 'tabs/teman_tab.dart';
 import 'tabs/profil_tab.dart';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DASHBOARD SCREEN — 100% Authentic Portal Siswa SMKN 1 Beringin
-//  Original Branding Top Navbar • Authentic Sliding Bottom Bar
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DASHBOARD SCREEN — Portal Siswa SMKN 1 Beringin
+//  Top navbar and sliding bottom bar
 
 class DashboardScreen extends StatefulWidget {
   final DashboardFullModel? initialData;
@@ -43,13 +42,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   late Timer _clockTimer;
+  Timer? _pollTimer;
+  bool _isPolling = false;
+  int _pendingScans = 0;
   String _currentTimeWIB = '';
 
   @override
   void initState() {
     super.initState();
     _updateClock();
-    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) => _updateClock());
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
+    // Realtime: poll sesi-aktif tiap 5 detik (mirror presensi web).
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollSession());
     if (widget.initialData != null) {
       _data = widget.initialData;
       _isLoading = false;
@@ -65,17 +69,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _clockTimer.cancel();
     super.dispose();
   }
 
+  Future<void> _refreshPendingScans() async {
+    final n = await ScanQueueService.pendingCount();
+    if (mounted && n != _pendingScans) setState(() => _pendingScans = n);
+  }
+
   void _updateClock() {
     final now = DateTime.now().toUtc().add(const Duration(hours: 7)); // WIB (UTC+7)
-    final formatted = DateFormat('HH:mm').format(now);
+    final formatted = DateFormat('HH:mm:ss').format(now);
     if (mounted) {
       setState(() {
         _currentTimeWIB = '$formatted WIB';
       });
+      _refreshPendingScans();
+    }
+  }
+
+  /// Polling ringan `/siswa/sesi-aktif` - update sesi & geofence tanpa reload penuh.
+  Future<void> _pollSession() async {
+    if (_isPolling || _data == null) return;
+    _isPolling = true;
+    try {
+      final res = await ApiService.getActiveSession();
+      if (mounted && res.success && res.data != null) {
+        final polled = _data!.applySessionPoll(res.data!);
+        setState(() => _data = polled);
+        if (polled.geofencing != null) {
+          final geoRes = await LocationService.verifyGeofence(polled.geofencing!);
+          if (mounted) setState(() => _geofenceResult = geoRes);
+        }
+      }
+    } finally {
+      _isPolling = false;
     }
   }
 
@@ -128,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Deteksi Wajah Belum Terdaftar: langsung arahkan ke Face ID Setup
     if (!_data!.user.isFaceEnrolled) {
       HapticFeedback.heavyImpact();
-      _showToast('⚠️ Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
+      _showToast(' Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
       _openEnrollment();
       return;
     }
@@ -172,13 +202,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _refreshLocation() async {
     if (_data == null || _data!.geofencing == null) return;
     HapticFeedback.mediumImpact();
-    _showToast('🛰️ Sedang membaca sensor koordinat GPS...');
+    _showToast(' Sedang membaca sensor koordinat GPS...');
     final geoRes = await LocationService.verifyGeofence(_data!.geofencing!);
     if (mounted) {
       setState(() => _geofenceResult = geoRes);
       _showToast(geoRes.isInside
-          ? '✅ Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)}m dari sekolah (Aman)'
-          : '⚠️ Di luar radius: ${geoRes.distanceMeters > 2000 ? '>2km' : '${geoRes.distanceMeters.toStringAsFixed(0)}m'} (Maks 110m)');
+          ? ' Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)}m dari sekolah (Aman)'
+          : ' Di luar radius: ${geoRes.distanceMeters > 2000 ? '>2km' : '${geoRes.distanceMeters.toStringAsFixed(0)}m'} (Maks 110m)');
     }
   }
 
@@ -191,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.primaryDeep,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
@@ -275,7 +305,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Native Slate-50 Canvas
+      backgroundColor:  AppColors.background, // Native Slate-50 Canvas
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
@@ -302,10 +332,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. Top Navbar Header (Shown on other tabs, hidden on Beranda where Hero Header exists) ──
+            //  1. Top Navbar Header (Shown on other tabs, hidden on Beranda where Hero Header exists)
             if (_currentIndex != 0) _buildTopBrandHeader(),
 
-            // ── 2. Tab Content Body ──
+            //  2. Tab Content Body
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
@@ -341,23 +371,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
 
-        // ── 3. Wanderly iOS Floating Navigation Dock ──
+        if (_pendingScans > 0)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 16,
+            right: 16,
+            child: _buildPendingBanner(),
+          ),
+        //  3. Floating Navigation Bar
         _buildWebSlidingBottomBar(),
       ],
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  TOP NAVBAR HEADER (Matching Web Portal Photo Exactly)
-  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildPendingBanner() {
+    return GestureDetector(
+      onTap: () async {
+        HapticFeedback.lightImpact();
+        final sent = await ScanQueueService.syncPending();
+        await _refreshPendingScans();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              sent > 0
+                  ? '$sent presensi offline berhasil dikirim.'
+                  : 'Belum bisa terhubung. Akan dicoba lagi otomatis.',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            backgroundColor: AppColors.primaryDeep,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color:  AppColors.warningBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color:  AppColors.warning.withOpacity(0.35)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+             Icon(CupertinoIcons.cloud_upload,
+                size: 18, color: AppColors.warning),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '$_pendingScans presensi menunggu dikirim',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color:  AppColors.amberDeep,
+                ),
+              ),
+            ),
+            Text(
+              'Kirim',
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color:  AppColors.warning,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.3, end: 0);
+  }
 
   Widget _buildTopBrandHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration:  BoxDecoration(
+        color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+          bottom: BorderSide(color: AppColors.border, width: 1.0),
         ),
       ),
       child: Row(
@@ -368,16 +473,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             height: 32,
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color:  AppColors.border),
             ),
             child: Image.asset(
               'assets/images/logo.webp',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
+              errorBuilder: (_, __, ___) =>  Icon(
                 Icons.school_rounded,
-                color: Color(0xFF2563EB),
+                color: AppColors.primaryBlue,
                 size: 20,
               ),
             ),
@@ -394,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF0F172A),
+                  color:  AppColors.primaryDark,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -403,7 +508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF2563EB),
+                  color:  AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -413,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             width: 1,
             height: 20,
-            color: const Color(0xFFE2E8F0),
+            color:  AppColors.border,
           ),
           const SizedBox(width: 8),
 
@@ -427,73 +532,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           const Spacer(),
 
-          // ── Actions Right: Panduan, Theme Toggle, Logout ──
-          GestureDetector(
-            onTap: _showPanduanDialog,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Icon(
-                Icons.menu_book_rounded,
-                size: 15,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // Sky Theme Toggle Indicator Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.wb_sunny_rounded, size: 14, color: Color(0xFFF59E0B)),
-                SizedBox(width: 4),
-                Icon(Icons.nightlight_round, size: 13, color: Color(0xFF94A3B8)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // Logout Button
-          GestureDetector(
-            onTap: _confirmLogout,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Icon(
-                Icons.logout_rounded,
-                size: 15,
-                color: Color(0xFFEF4444),
-              ),
-            ),
-          ),
+          //  Actions Right: hanya logo & brand (panduan/toggle/logout dipindah ke Profil).
         ],
       ),
-    );
+    )
+      .animate()
+      .fadeIn(duration: 300.ms)
+      .slideY(begin: -0.3, end: 0);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  AUTHENTIC WANDERLY FLOATING NAVIGATION DOCK
-  // ═══════════════════════════════════════════════════════════
+//  Floating navigation bar
 
   static const List<({String title, IconData activeIcon, IconData inactiveIcon})>
       _navItems = [
@@ -531,10 +579,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset + 8 : 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.96),
-              border: const Border(
+              color: AppColors.surface.withOpacity(0.96),
+              border:  Border(
                 top: BorderSide(
-                  color: Color(0xFFE2E8F0),
+                  color: AppColors.border,
                   width: 1.0,
                 ),
               ),
@@ -562,8 +610,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           isSelected ? item.activeIcon : item.inactiveIcon,
                           size: 22,
                           color: isSelected
-                              ? const Color(0xFF2563EB)
-                              : const Color(0xFF94A3B8),
+                              ?  AppColors.primaryBlue
+                              :  AppColors.textMuted,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -572,8 +620,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             fontSize: 10.5,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFF94A3B8),
+                                ?  AppColors.primaryBlue
+                                :  AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -598,9 +646,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // 1. Hero Header Shimmer
           Container(
             height: 250.0 + topPadding,
-            decoration: const BoxDecoration(
+            decoration:  BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                colors: [AppColors.primaryDeep, AppColors.primaryDeep],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -658,11 +706,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withOpacity(0.06),
+                      color:  AppColors.shadow.withOpacity(0.06),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -678,7 +726,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 110,
                           height: 22,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color:  AppColors.background,
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
@@ -686,7 +734,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 80,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color:  AppColors.background,
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
@@ -697,7 +745,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 140,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
+                        color:  AppColors.border,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -706,7 +754,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 200,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color:  AppColors.background,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -716,7 +764,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 145,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color:  AppColors.background,
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
@@ -736,8 +784,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     width: 52,
                     height: 52,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration:  BoxDecoration(
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -746,7 +794,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 44,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
+                      color:  AppColors.border,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -768,7 +816,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(CupertinoIcons.exclamationmark_triangle_fill,
+             Icon(CupertinoIcons.exclamationmark_triangle_fill,
                 color: AppColors.warning, size: 48),
             const SizedBox(height: 16),
             Text(

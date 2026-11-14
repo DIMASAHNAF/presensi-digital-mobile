@@ -71,3 +71,26 @@ migrate_working_dir/
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 
+
+# Secrets & build artifacts (never commit)
+*.jks
+*.keystore
+android/key.properties
+*.bak_*
+*.bak
+*.tierA.bak_*
+*.b8.bak_*
+*.b9.bak_*
+*.b10.bak_*
+*.b7.bak_*
+*.c12.bak_*
+*.c13.bak_*
+*.c14.bak_*
+*.c15.bak_*
+*.ui*.bak_*
+*.appver.bak_*
+*.devbind.bak_*
+*.imp.bak_*
+*.presign.bak_*
+*.multiref.bak_*
+docs/superpowers/

@@ -7,11 +7,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/device_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image/image.dart' as img;
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/telemetry_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/web_face_detector.dart';
 import '../auth/login_screen.dart';
@@ -19,7 +21,8 @@ import '../dashboard/dashboard_screen.dart';
 
 class EnrollWajahScreen extends StatefulWidget {
   final bool isOnboarding;
-  const EnrollWajahScreen({super.key, this.isOnboarding = false});
+  final Future<ApiResponse> Function(List<String> images)? onSubmitExternal;
+  const EnrollWajahScreen({super.key, this.isOnboarding = false, this.onSubmitExternal});
 
   @override
   State<EnrollWajahScreen> createState() => _EnrollWajahScreenState();
@@ -33,6 +36,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
   List<CameraDescription>? _cameras;
   int _selectedCameraIdx = 0;
   bool _isCameraReady = false;
+  String _cameraErrorDetail = '';
 
   EnrollState _enrollState = EnrollState.ready;
   String _errorMessage = '';
@@ -160,34 +164,66 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
   }
 
   Future<void> _setupCameraController(CameraDescription camera) async {
-    _cameraController = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
+    // Buang controller lama dulu supaya stream kamera tidak tertinggal.
+    // Di web, stream yang masih hidup membuat getUserMedia berikutnya gagal
+    // dengan NotReadableError (cameraNotReadable) saat init ulang.
+    await _disposeCamera();
 
-    try {
-      await _cameraController!.initialize();
+    // Web kadang melaporkan kamera "sibuk" sesaat (NotReadableError) karena
+    // driver/peramban belum melepas stream. Coba beberapa kali dengan jeda.
+    const int maxAttempts = 4;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      final controller = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      _cameraController = controller;
+
       try {
-        await _cameraController!.setZoomLevel(await _cameraController!.getMinZoomLevel());
-      } catch (_) {}
+        await controller.initialize();
+        try {
+          await controller.setZoomLevel(await controller.getMinZoomLevel());
+        } catch (_) {}
 
-      if (mounted) {
-        setState(() {
-          _isCameraReady = true;
-          _enrollState = EnrollState.ready;
-          _dynamicFeedback = 'Posisikan wajah Anda di dalam lingkaran';
-        });
-        _startAutoCaptureTimer();
+        if (mounted) {
+          setState(() {
+            _isCameraReady = true;
+            _enrollState = EnrollState.ready;
+            _dynamicFeedback = 'Posisikan wajah Anda di dalam lingkaran';
+          });
+          _startAutoCaptureTimer();
+        }
+        return;
+      } catch (e) {
+        _cameraErrorDetail = e.toString();
+        TelemetryService.report('camera', e);
+        try {
+          await controller.dispose();
+        } catch (_) {}
+        _cameraController = null;
+        if (attempt < maxAttempts) {
+          await Future.delayed(Duration(milliseconds: 350 * attempt));
+        }
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _enrollState = EnrollState.failed;
-          _errorMessage = 'Gagal inisialisasi kamera: $e';
-        });
-      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _enrollState = EnrollState.failed;
+        _errorMessage = 'Gagal inisialisasi kamera: $_cameraErrorDetail';
+      });
+    }
+  }
+
+  Future<void> _disposeCamera() async {
+    final controller = _cameraController;
+    _cameraController = null;
+    if (controller != null) {
+      try {
+        await controller.dispose();
+      } catch (_) {}
     }
   }
 
@@ -198,7 +234,6 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
     setState(() => _isCameraReady = false);
 
     _selectedCameraIdx = (_selectedCameraIdx + 1) % _cameras!.length;
-    await _cameraController?.dispose();
     await _setupCameraController(_cameras![_selectedCameraIdx]);
   }
 
@@ -376,7 +411,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal mengambil foto: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: const Color(0xFFFF3B30),
           ),
         );
         _startAutoCaptureTimer();
@@ -407,17 +442,24 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
     });
 
     try {
-      final res = await ApiService.enrollFace(faceImagesBase64: _capturedImages);
+      final res = widget.onSubmitExternal != null
+          ? await widget.onSubmitExternal!(_capturedImages)
+          : await ApiService.enrollFace(
+              faceImagesBase64: _capturedImages,
+              deviceId: await DeviceService.getDeviceId(),
+            );
 
       if (res.success) {
         HapticFeedback.heavyImpact();
         _glyphSuccessController.forward();
 
-        final currentUser = StorageService.getUser();
-        if (currentUser != null) {
-          await StorageService.saveUser(
-            currentUser.copyWith(isFaceEnrolled: true),
-          );
+        if (widget.onSubmitExternal == null) {
+          final currentUser = StorageService.getUser();
+          if (currentUser != null) {
+            await StorageService.saveUser(
+              currentUser.copyWith(isFaceEnrolled: true),
+            );
+          }
         }
 
         setState(() {
@@ -426,7 +468,9 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
 
         Future.delayed(const Duration(milliseconds: 1400), () {
           if (mounted) {
-            if (widget.isOnboarding) {
+            if (widget.onSubmitExternal != null) {
+              Navigator.of(context).pop(true);
+            } else if (widget.isOnboarding) {
               Navigator.of(context).pushAndRemoveUntil(
                 CupertinoPageRoute(builder: (_) => const DashboardScreen()),
                 (route) => false,
@@ -478,7 +522,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
     _autoCaptureTimer?.cancel();
     _pulseController.dispose();
     _glyphSuccessController.dispose();
-    _cameraController?.dispose();
+    _disposeCamera();
     super.dispose();
   }
 
@@ -493,7 +537,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
           builder: (context, constraints) {
             final double maxH = constraints.maxHeight;
             final double maxW = constraints.maxWidth;
-            // Proportional circle size: fits perfectly on both small and large screens without overflow
+            // Proportional circle size for small and large screens
             final double circleSize =
                 (maxH * 0.35).clamp(170.0, (maxW * 0.64).clamp(180.0, 250.0));
 
@@ -584,7 +628,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color:
-                                    const Color(0xFF34D399).withOpacity(0.40),
+                                    const Color(0xFF30D158).withOpacity(0.40),
                               ),
                             ),
                             child: Row(
@@ -592,7 +636,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                               children: [
                                 const Icon(
                                   Icons.face_retouching_natural_rounded,
-                                  color: Color(0xFF34D399),
+                                  color: Color(0xFF30D158),
                                   size: 14,
                                 ),
                                 const SizedBox(width: 6),
@@ -654,13 +698,13 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                       style: GoogleFonts.inter(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF34D399),
+                        color: const Color(0xFF30D158),
                       ),
                     ),
 
                     const Spacer(),
 
-                    // 3. Central Circular Face ID Viewport (100% Round & Perfectly Filled)
+                    // 3. Central circular Face ID viewport
                     Center(
                       child: SizedBox(
                         width: circleSize + 56,
@@ -679,7 +723,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                               ),
                             ),
 
-                            // Central Circular Camera Viewport (100% Full Round Circle, Zero Letterboxing)
+                            // Central circular camera viewport
                             ClipOval(
                               child: Container(
                                 width: circleSize,
@@ -702,7 +746,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                         : (_isPoseMatching
                                             ? const Color(0xFF30D158)
                                             : (_isFaceDetected
-                                                ? const Color(0xFF60A5FA)
+                                                ? const Color(0xFF007AFF)
                                                 : Colors.white.withOpacity(0.32))),
                                     width: 3.0,
                                   ),
@@ -768,7 +812,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                             color: _isPoseMatching
                                 ? const Color(0xFF30D158).withOpacity(0.55)
                                 : (_isFaceDetected
-                                    ? const Color(0xFF60A5FA).withOpacity(0.40)
+                                    ? const Color(0xFF007AFF).withOpacity(0.40)
                                     : Colors.white.withOpacity(0.12)),
                           ),
                         ),
@@ -784,7 +828,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   _isPoseMatching
                                       ? const Color(0xFF30D158)
-                                      : const Color(0xFF60A5FA),
+                                      : const Color(0xFF007AFF),
                                 ),
                                 minHeight: 4,
                               ),
@@ -801,8 +845,8 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                     color: _isPoseMatching
                                         ? const Color(0xFF30D158)
                                         : (_isFaceDetected
-                                            ? const Color(0xFF60A5FA)
-                                            : const Color(0xFFEF4444)),
+                                            ? const Color(0xFF007AFF)
+                                            : const Color(0xFFFF3B30)),
                                   ),
                                 ),
                                 const SizedBox(width: 7),
@@ -829,10 +873,10 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                                 color: _isPoseMatching
-                                    ? const Color(0xFF34D399)
+                                    ? const Color(0xFF30D158)
                                     : (_isFaceDetected
-                                        ? const Color(0xFF93C5FD)
-                                        : const Color(0xFFFCA5A5)),
+                                        ? const Color(0xFF99CCFF)
+                                        : const Color(0xFFFF9E9A)),
                               ),
                             ),
                           ],
@@ -898,8 +942,8 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
                                 colors: [
-                                  Color(0xFF10B981),
-                                  Color(0xFF059669),
+                                  Color(0xFF34C759),
+                                  Color(0xFF34C759),
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -930,7 +974,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                             width: 32,
                             height: 32,
                             child: CircularProgressIndicator(
-                              color: Color(0xFF34D399),
+                              color: Color(0xFF30D158),
                               strokeWidth: 3,
                             ),
                           ),
@@ -940,7 +984,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF34D399),
+                              color: const Color(0xFF30D158),
                             ),
                           ),
                         ],
@@ -960,7 +1004,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                   ],
                 ),
 
-                // ── 7. Error Modal Overlay ──
+                //  7. Error Modal Overlay
                 if (_enrollState == EnrollState.failed)
                   Builder(
                     builder: (context) {
@@ -985,15 +1029,15 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                 borderRadius: BorderRadius.circular(32),
                                 border: Border.all(
                                   color: isPermError
-                                      ? const Color(0xFFF59E0B).withOpacity(0.50)
-                                      : const Color(0xFFF87171).withOpacity(0.40),
+                                      ? const Color(0xFFFF9500).withOpacity(0.50)
+                                      : const Color(0xFFFF6961).withOpacity(0.40),
                                   width: 1.2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: isPermError
-                                        ? const Color(0xFFF59E0B).withOpacity(0.25)
-                                        : const Color(0xFFEF4444).withOpacity(0.30),
+                                        ? const Color(0xFFFF9500).withOpacity(0.25)
+                                        : const Color(0xFFFF3B30).withOpacity(0.30),
                                     blurRadius: 36,
                                     offset: const Offset(0, 10),
                                   ),
@@ -1008,14 +1052,14 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: isPermError
-                                          ? const Color(0xFFF59E0B)
+                                          ? const Color(0xFFFF9500)
                                               .withOpacity(0.18)
-                                          : const Color(0xFFEF4444)
+                                          : const Color(0xFFFF3B30)
                                               .withOpacity(0.18),
                                       border: Border.all(
                                         color: isPermError
-                                            ? const Color(0xFFFBBF24)
-                                            : const Color(0xFFF87171),
+                                            ? const Color(0xFFFFCC00)
+                                            : const Color(0xFFFF6961),
                                         width: 2.2,
                                       ),
                                     ),
@@ -1025,8 +1069,8 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                             ? Icons.videocam_off_rounded
                                             : Icons.close_rounded,
                                         color: isPermError
-                                            ? const Color(0xFFFBBF24)
-                                            : const Color(0xFFF87171),
+                                            ? const Color(0xFFFFCC00)
+                                            : const Color(0xFFFF6961),
                                         size: 34,
                                       ),
                                     ),
@@ -1052,8 +1096,8 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                       fontSize: 12,
                                       height: 1.4,
                                       color: isPermError
-                                          ? const Color(0xFFFDE68A)
-                                          : const Color(0xFFFECDD3),
+                                          ? const Color(0xFFFFECC2)
+                                          : const Color(0xFFFFEBEB),
                                     ),
                                   ),
                                   if (isPermError) ...[
@@ -1075,7 +1119,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                             children: [
                                               const Icon(Icons.tune_rounded,
                                                   size: 14,
-                                                  color: Color(0xFF60A5FA)),
+                                                  color: Color(0xFF007AFF)),
                                               const SizedBox(width: 6),
                                               Text(
                                                 'Cara Buka Izin di Chrome / Safari:',
@@ -1090,13 +1134,13 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                           ),
                                           const SizedBox(height: 6),
                                           Text(
-                                            '1. Klik ikon Setelan Situs (tune 🎛️) di sebelah kiri URL presensi.\n'
+                                            '1. Klik ikon Setelan Situs (tune ) di sebelah kiri URL presensi.\n'
                                             '2. Pada baris "Kamera", ubah ke "Izinkan" (Allow).\n'
                                             '3. Ketuk tombol di bawah untuk menyambungkan ulang.',
                                             style: GoogleFonts.inter(
                                               fontSize: 10.5,
                                               height: 1.45,
-                                              color: const Color(0xFFD1D5DB),
+                                              color: const Color(0xFFC7C7CC),
                                             ),
                                           ),
                                         ],
@@ -1140,7 +1184,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF9CA3AF),
+                                          color: const Color(0xFFAEAEB2),
                                         ),
                                       ),
                                     ),
@@ -1166,7 +1210,7 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
       return Container(
         width: size,
         height: size,
-        color: const Color(0xFF111827),
+        color: const Color(0xFF1C1C1E),
         child: const Center(
           child: CircularProgressIndicator(
             color: Color(0xFF30D158),

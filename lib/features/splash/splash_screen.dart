@@ -7,7 +7,11 @@ import '../../core/models/dashboard_full_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../auth/login_screen.dart';
+import '../auth/auth_router.dart';
+import '../../core/constants/app_version.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'force_update_screen.dart';
+import '../../core/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -65,6 +69,22 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startLaunchSequence() async {
+    // Version gating: cek build minimum dari server (public). Gagal = lanjut
+    // (jangan blokir siswa hanya karena endpoint versi tak terjangkau).
+    final appCfg = await ApiService.getAppConfig();
+    if (appCfg != null) {
+      final minBuild = (appCfg['min_build'] as num?)?.toInt() ?? 0;
+      if (kAppBuild < minBuild) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const ForceUpdateScreen(),
+          ),
+        );
+        return;
+      }
+    }
+
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
@@ -77,7 +97,10 @@ class _SplashScreenState extends State<SplashScreen>
     if (!loggedIn || user == null) {
       destination = const LoginScreen();
     } else {
-      destination = DashboardScreen(initialData: _preloadedDashboardData);
+      final step = resolveAuthStep(user);
+      destination = step == AuthStep.dashboard
+          ? DashboardScreen(initialData: _preloadedDashboardData)
+          : buildAuthDestination(step, user);
     }
 
     Navigator.of(context).pushReplacement(
@@ -94,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7), // Apple System Grouped Background
+      backgroundColor:  AppColors.background, // Apple System Grouped Background
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
@@ -116,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 const Spacer(flex: 3),
 
-                // ── Apple Pop-out Logo with Subtle Shockwave Ring ──
+                //  Apple Pop-out Logo with Subtle Shockwave Ring
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -127,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF007AFF).withOpacity(0.2),
+                          color:  AppColors.primaryBlue.withOpacity(0.2),
                           width: 1.5,
                         ),
                       ),
@@ -149,9 +172,9 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: AppColors.surface,
                         border: Border.all(
-                          color: const Color(0xFFE5E5EA),
+                          color:  AppColors.border,
                           width: 1.2,
                         ),
                         boxShadow: [
@@ -169,10 +192,10 @@ class _SplashScreenState extends State<SplashScreen>
                       'assets/images/logo.png',
                       width: 68,
                       height: 68,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, __, ___) =>  Icon(
                         CupertinoIcons.checkmark_seal_fill,
                         size: 56,
-                        color: Color(0xFF007AFF),
+                        color: AppColors.primaryBlue,
                       ),
                     )
                         .animate()
@@ -188,13 +211,13 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const SizedBox(height: 28),
 
-                // ── Apple Typography ──
+                //  Apple Typography
                 Text(
                   'PRESENSI SISWA',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF000000),
+                    color:  AppColors.textMain,
                     letterSpacing: 2.0,
                   ),
                 )
@@ -209,7 +232,7 @@ class _SplashScreenState extends State<SplashScreen>
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF007AFF),
+                    color:  AppColors.primaryBlue,
                     letterSpacing: 1.2,
                   ),
                 )
@@ -219,12 +242,12 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const SizedBox(height: 40),
 
-                // ── Sleek iOS Progress Capsule ──
+                //  Sleek iOS Progress Capsule
                 Container(
                   width: 130,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E5EA),
+                    color:  AppColors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: ClipRRect(
@@ -234,7 +257,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Container(
                         width: 50,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF007AFF),
+                          color:  AppColors.primaryBlue,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -246,13 +269,13 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const Spacer(flex: 3),
 
-                // ── Bottom Branding ──
+                //  Bottom Branding
                 Text(
                   'Portal Presensi Digital Siswa',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8E8E93),
+                    color:  AppColors.textMuted,
                     letterSpacing: 0.4,
                   ),
                 ).animate(delay: 700.ms).fadeIn(duration: 500.ms),

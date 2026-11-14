@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../constants/api_constants.dart';
-import '../models/user_model.dart';
 import '../models/session_model.dart';
-import '../models/history_model.dart';
+import '../models/user_model.dart';
 import '../models/dashboard_full_model.dart';
+import '../models/kelas_model.dart';
 import 'storage_service.dart';
 
 class ApiResponse<T> {
@@ -13,10 +13,18 @@ class ApiResponse<T> {
   final String message;
   final T? data;
 
+  /// True bila kegagalan disebabkan tak ada koneksi ke server (bukan penolakan).
+  final bool offline;
+
+  /// Kode HTTP bila respons diterima; null bila koneksi gagal.
+  final int? statusCode;
+
   ApiResponse({
     required this.success,
     required this.message,
     this.data,
+    this.offline = false,
+    this.statusCode,
   });
 }
 
@@ -35,6 +43,22 @@ class ApiService {
       }
     }
     return headers;
+  }
+
+  /// 0. App version gating config (public).
+  static Future<Map<String, dynamic>?> getAppConfig() async {
+    try {
+      final response = await _client
+          .get(Uri.parse(ApiConstants.appConfig))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic> && body['success'] == true) {
+          return body;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// 1. Login with NISN & Password
@@ -239,7 +263,7 @@ class ApiService {
     }
   }
 
-  /// 3. Get Active Session & Geofencing Info
+  /// 3B. Poll Sesi Aktif (ringan, untuk realtime tanpa full reload)
   static Future<ApiResponse<ActiveSessionResponse>> getActiveSession() async {
     try {
       final response = await _client.get(
@@ -250,11 +274,10 @@ class ApiService {
       final body = jsonDecode(response.body);
 
       if (response.statusCode == 200 && body['success'] == true) {
-        final sessionResp = ActiveSessionResponse.fromJson(body);
         return ApiResponse(
           success: true,
-          message: 'Sesi aktif berhasil dimuat.',
-          data: sessionResp,
+          message: 'Sesi aktif diperbarui.',
+          data: ActiveSessionResponse.fromJson(body),
         );
       } else if (response.statusCode == 401) {
         await StorageService.clear();
@@ -283,7 +306,9 @@ class ApiService {
     required double longitude,
     required double accuracy,
     required bool isMocked,
+    int? gpsTimestampMs,
     int? sesiId,
+    String? deviceId,
   }) async {
     try {
       final payload = <String, dynamic>{
@@ -295,6 +320,12 @@ class ApiService {
         'is_mock': isMocked,
         'is_mocked': isMocked,
       };
+      if (deviceId != null && deviceId.isNotEmpty) {
+        payload['device_id'] = deviceId;
+      }
+      if (gpsTimestampMs != null) {
+        payload['gps_timestamp'] = gpsTimestampMs;
+      }
       if (sesiId != null && sesiId > 0) {
         payload['sesi_id'] = sesiId;
       }
@@ -312,18 +343,21 @@ class ApiService {
           success: true,
           message: body['message'] ?? 'Presensi berhasil dicatat!',
           data: body,
+          statusCode: response.statusCode,
         );
       } else {
         return ApiResponse(
           success: false,
           message: body['message'] ?? 'Gagal memproses presensi wajah.',
           data: body,
+          statusCode: response.statusCode,
         );
       }
     } catch (e) {
       return ApiResponse(
         success: false,
         message: 'Koneksi timeout atau gagal menghubungi server presensi.',
+        offline: true,
       );
     }
   }
@@ -331,6 +365,7 @@ class ApiService {
   /// 5. Enroll Face Biometrics (Multi-angle photos)
   static Future<ApiResponse<Map<String, dynamic>>> enrollFace({
     required List<String> faceImagesBase64,
+    String? deviceId,
   }) async {
     try {
       final response = await _client.post(
@@ -338,6 +373,7 @@ class ApiService {
         headers: _headers(withAuth: true),
         body: jsonEncode({
           'face_images': faceImagesBase64,
+          if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
         }),
       ).timeout(const Duration(seconds: 45));
 
@@ -368,41 +404,6 @@ class ApiService {
       return ApiResponse(
         success: false,
         message: 'Koneksi jaringan gagal atau server timeout saat memproses biometrik.',
-      );
-    }
-  }
-
-  /// 6. Attendance History
-  static Future<ApiResponse<List<HistoryItem>>> getHistory({int limit = 30}) async {
-    try {
-      final response = await _client.get(
-        Uri.parse('${ApiConstants.riwayat}?limit=$limit'),
-        headers: _headers(withAuth: true),
-      ).timeout(const Duration(seconds: 10));
-
-      final body = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && body['success'] == true) {
-        var rawList = body['riwayat'] as List<dynamic>? ?? [];
-        List<HistoryItem> items = rawList
-            .map((item) => HistoryItem.fromJson(item as Map<String, dynamic>))
-            .toList();
-
-        return ApiResponse(
-          success: true,
-          message: 'Riwayat berhasil dimuat.',
-          data: items,
-        );
-      } else {
-        return ApiResponse(
-          success: false,
-          message: body['message'] ?? 'Gagal memuat riwayat.',
-        );
-      }
-    } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Koneksi jaringan gagal.',
       );
     }
   }
@@ -480,5 +481,159 @@ class ApiService {
       );
     }
   }
+
+  /// 7. Register New Student (data + face biometrics, auto-login)
+  static Future<ApiResponse<UserModel>> register({
+    required String name,
+    required String username,
+    required String nisn,
+    required int kelasId,
+    required String password,
+    required String passwordConfirmation,
+    required List<String> faceImagesBase64,
+    String? email,
+    String? namaOrtu,
+    String? noHpOrtu,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse(ApiConstants.register),
+        headers: _headers(withAuth: false),
+        body: jsonEncode({
+          'name': name.trim(),
+          'username': username.trim(),
+          'nisn': nisn.trim(),
+          'kelas_id': kelasId,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+          'email': email,
+          'nama_ortu': namaOrtu,
+          'no_hp_ortu': noHpOrtu,
+          'face_images': faceImagesBase64,
+        }),
+      ).timeout(const Duration(seconds: 60));
+
+      dynamic body;
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        body = null;
+      }
+
+      if (response.statusCode == 200 &&
+          body != null &&
+          body['success'] == true) {
+        final token = body['token'] as String;
+        final user = UserModel.fromJson(body['user']);
+        await StorageService.saveToken(token);
+        await StorageService.saveUser(user);
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'Registrasi berhasil.',
+          data: user,
+        );
+      } else {
+        final msg = (body is Map ? body['message'] : null) ??
+            'Pendaftaran gagal (HTTP ${response.statusCode}).';
+        return ApiResponse(success: false, message: msg);
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal atau server timeout saat mendaftar.',
+      );
+    }
+  }
+
+  /// 8. Get Master Kelas (for registration dropdown)
+  static Future<ApiResponse<List<KelasModel>>> getKelas() async {
+    try {
+      final response = await _client.get(
+        Uri.parse(ApiConstants.kelas),
+        headers: _headers(withAuth: false),
+      ).timeout(const Duration(seconds: 10));
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body['success'] == true) {
+        final raw = body['kelas'] as List<dynamic>? ?? [];
+        final list =
+            raw.map((k) => KelasModel.fromJson(k as Map<String, dynamic>)).toList();
+        return ApiResponse(
+          success: true,
+          message: 'Data kelas berhasil dimuat.',
+          data: list,
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: body['message'] ?? 'Gagal memuat data kelas.',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi jaringan gagal.',
+      );
+    }
+  }
+
+  /// B9. Ambil status perangkat yang terikat pada akun.
+  static Future<ApiResponse<Map<String, dynamic>>> getDeviceInfo() async {
+    try {
+      final response = await _client
+          .get(Uri.parse(ApiConstants.device), headers: _headers(withAuth: true))
+          .timeout(const Duration(seconds: 15));
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'OK',
+          data: body,
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: body['message']?.toString() ?? 'Gagal memuat info perangkat.',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+      );
+    }
+  }
+
+  /// B9. Lepas ikatan perangkat (wajib password + dari perangkat terdaftar).
+  static Future<ApiResponse<Map<String, dynamic>>> resetDevice({
+    required String password,
+    required String deviceId,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse(ApiConstants.deviceReset),
+            headers: _headers(withAuth: true),
+            body: jsonEncode({'password': password, 'device_id': deviceId}),
+          )
+          .timeout(const Duration(seconds: 20));
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 && body['success'] == true) {
+        return ApiResponse(
+          success: true,
+          message: body['message'] ?? 'Perangkat berhasil dilepas.',
+          data: body,
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: body['message']?.toString() ?? 'Gagal melepas perangkat.',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+      );
+    }
+  }
+
 }
 

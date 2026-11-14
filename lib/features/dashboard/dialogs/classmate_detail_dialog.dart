@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/dashboard_full_model.dart';
+import '../../../core/theme/app_theme.dart';
 
 class ClassmateDetailDialog extends StatelessWidget {
   final ClassmateModel classmate;
@@ -73,26 +74,26 @@ class ClassmateDetailDialog extends StatelessWidget {
     String statusLabel;
 
     if (isHadir) {
-      statusBgColor = const Color(0xFFECFDF5);
-      statusTextColor = const Color(0xFF047857);
-      statusDotColor = const Color(0xFF10B981);
+      statusBgColor =  AppColors.successBg;
+      statusTextColor =  AppColors.success;
+      statusDotColor =  AppColors.success;
       statusLabel = classmate.jamAbsen != null && classmate.jamAbsen!.isNotEmpty
           ? 'Hadir ${classmate.jamAbsen} WIB'
           : 'Hadir Hari Ini';
     } else if (isIzin) {
-      statusBgColor = const Color(0xFFFFFBEB);
-      statusTextColor = const Color(0xFFB45309);
-      statusDotColor = const Color(0xFFF59E0B);
+      statusBgColor =  AppColors.warningBg;
+      statusTextColor =  AppColors.amberDeep;
+      statusDotColor =  AppColors.warning;
       statusLabel = 'Izin';
     } else if (isSakit) {
-      statusBgColor = const Color(0xFFF0F9FF);
-      statusTextColor = const Color(0xFF0369A1);
-      statusDotColor = const Color(0xFF0EA5E9);
+      statusBgColor =  AppColors.infoBg;
+      statusTextColor =  AppColors.primaryBlue;
+      statusDotColor =  AppColors.info;
       statusLabel = 'Sakit';
     } else {
-      statusBgColor = const Color(0xFFF1F5F9);
-      statusTextColor = const Color(0xFF64748B);
-      statusDotColor = const Color(0xFF94A3B8);
+      statusBgColor =  AppColors.background;
+      statusTextColor =  AppColors.textMuted;
+      statusDotColor =  AppColors.textMuted;
       statusLabel = 'Belum Presensi';
     }
 
@@ -100,25 +101,25 @@ class ClassmateDetailDialog extends StatelessWidget {
     final avatarUrl = _formatUrl(classmate.avatar);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration:  BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. Classmate Cover Banner (Identik Versi Web) ──
+          //  1. Classmate Cover Banner (Identik Versi Web)
           Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
                 height: 110,
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration:  BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                    colors: [AppColors.primaryDeep, AppColors.primaryDeep],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -173,7 +174,7 @@ class ClassmateDetailDialog extends StatelessWidget {
             ],
           ),
 
-          // ── 2. Avatar & Status Badge (Overlapping Banner) ──
+          //  2. Avatar & Status Badge (Overlapping Banner)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -188,7 +189,7 @@ class ClassmateDetailDialog extends StatelessWidget {
                     height: 76,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: AppColors.surface,
                       border: Border.all(color: Colors.white, width: 3.5),
                       boxShadow: [
                         BoxShadow(
@@ -251,7 +252,7 @@ class ClassmateDetailDialog extends StatelessWidget {
             ),
           ),
 
-          // ── 3. Info Siswa (Nama, Verified Badge, Username, Kelas) ──
+          //  3. Info Siswa (Nama, Verified Badge, Username, Kelas)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: Column(
@@ -265,14 +266,14 @@ class ClassmateDetailDialog extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                          color:  AppColors.primaryDark,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(
+                     Icon(
                       CupertinoIcons.checkmark_seal_fill,
-                      color: Color(0xFF007AFF),
+                      color: AppColors.primaryBlue,
                       size: 18,
                     ),
                   ],
@@ -287,15 +288,15 @@ class ClassmateDetailDialog extends StatelessWidget {
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
+                        color:  AppColors.textMuted,
                       ),
                     ),
                     Container(
                       width: 4,
                       height: 4,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFCBD5E1),
+                      decoration:  BoxDecoration(
+                        color: AppColors.textQuaternary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -304,7 +305,7 @@ class ClassmateDetailDialog extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF475569),
+                        color:  AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -312,14 +313,14 @@ class ClassmateDetailDialog extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // ── 4. Bio Quote Box (Identik Versi Web) ──
+                //  4. Bio Quote Box (Identik Versi Web)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color:  AppColors.background,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color:  AppColors.border),
                   ),
                   child: Text(
                     (classmate.bio != null && classmate.bio!.trim().isNotEmpty)
@@ -330,14 +331,14 @@ class ClassmateDetailDialog extends StatelessWidget {
                       fontStyle: FontStyle.italic,
                       color: (classmate.bio != null &&
                               classmate.bio!.trim().isNotEmpty)
-                          ? const Color(0xFF334155)
-                          : const Color(0xFF94A3B8),
+                          ?  AppColors.textSecondary
+                          :  AppColors.textMuted,
                       height: 1.45,
                     ),
                   ),
                 ),
 
-                // ── 5. Website / Portfolio Link (Jika ada) ──
+                //  5. Website / Portfolio Link (Jika ada)
                 if (classmate.website != null &&
                     classmate.website!.trim().isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -347,17 +348,17 @@ class ClassmateDetailDialog extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color:  AppColors.infoBg,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                        border: Border.all(color:  AppColors.infoBorder),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                           Icon(
                             CupertinoIcons.link,
                             size: 14,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.primaryBlue,
                           ),
                           const SizedBox(width: 6),
                           Flexible(
@@ -368,16 +369,16 @@ class ClassmateDetailDialog extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF2563EB),
+                                color:  AppColors.primaryBlue,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(
+                           Icon(
                             CupertinoIcons.arrow_up_right,
                             size: 11,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.primaryBlue,
                           ),
                         ],
                       ),
@@ -387,11 +388,11 @@ class ClassmateDetailDialog extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
-                // ── 6. Close Button ──
+                //  6. Close Button
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoButton(
-                    color: const Color(0xFFF1F5F9),
+                    color:  AppColors.background,
                     borderRadius: BorderRadius.circular(14),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     onPressed: () => Navigator.pop(context),
@@ -400,7 +401,7 @@ class ClassmateDetailDialog extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF334155),
+                        color:  AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -415,7 +416,7 @@ class ClassmateDetailDialog extends StatelessWidget {
 
   Widget _buildDefaultBanner() {
     return Container(
-      color: const Color(0xFF1E293B),
+      color:  AppColors.primaryDark,
       child: Stack(
         children: [
           Positioned.fill(
@@ -435,7 +436,7 @@ class ClassmateDetailDialog extends StatelessWidget {
 
   Widget _buildAvatarFallback() {
     return Container(
-      color: const Color(0xFF2563EB),
+      color:  AppColors.primaryBlue,
       alignment: Alignment.center,
       child: Text(
         classmate.nama.isNotEmpty ? classmate.nama[0].toUpperCase() : 'S',

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/session_model.dart';
+import '../../../core/models/dashboard_full_model.dart';
+import '../../../core/theme/app_theme.dart';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  JADWAL PELAJARAN HARI INI & MINGGUAN (XI PPLG 3 / XI-RPL 3)
-//  Sinkronisasi Penuh Roster Resmi Semester Ganjil & Jam Bel Sekolah
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  JADWAL PELAJARAN MINGGUAN — data real dari DB jadwal_pelajarans
 
 class JadwalItemData {
   final String jam;
@@ -28,18 +27,33 @@ class JadwalItemData {
     this.isBreak = false,
     required this.lesLabel,
   });
+
+  factory JadwalItemData.fromJadwalItem(JadwalItem item) {
+    return JadwalItemData(
+      jam: item.jamLabel,
+      startStr: item.jamMulai,
+      endStr: item.jamSelesai,
+      mapel: item.mapel,
+      guru: item.guru,
+      ruangan: item.ruangan,
+      isBreak: item.isBreak,
+      lesLabel: item.lesLabel,
+    );
+  }
 }
 
 class JadwalPelajaranWidget extends StatefulWidget {
   final SessionDetail? activeSession;
   final String namaKelas;
   final bool sudahHadir;
+  final List<JadwalItem> jadwal;
 
   const JadwalPelajaranWidget({
     super.key,
     required this.activeSession,
     required this.namaKelas,
     this.sudahHadir = false,
+    this.jadwal = const [],
   });
 
   @override
@@ -57,6 +71,14 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
     'Jumat',
   ];
 
+  static const List<String> _hariKeys = [
+    'senin',
+    'selasa',
+    'rabu',
+    'kamis',
+    'jumat',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -69,436 +91,12 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
     }
   }
 
-  // ── Master Weekly Timetable for XI PPLG 3 (XI-RPL 3) ──
-  // Source: Roster Semester Ganjil SMKN 1 Beringin 2026/2027 & Bell Timings JSON
   List<JadwalItemData> _getScheduleForDay(int dayIndex) {
-    switch (dayIndex) {
-      // ── 1. SENIN (Upacara Bendera Day) ──
-      case 0:
-        return const [
-          JadwalItemData(
-            jam: '07:15 - 08:30',
-            startStr: '07:15',
-            endStr: '08:30',
-            mapel: 'Upacara Bendera',
-            guru: 'Seluruh Guru & Pembina',
-            ruangan: 'Lapangan Utama',
-            isBreak: false,
-            lesLabel: 'Les 1',
-          ),
-          JadwalItemData(
-            jam: '08:30 - 09:05',
-            startStr: '08:30',
-            endStr: '09:05',
-            mapel: 'Basis Data',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 2',
-          ),
-          JadwalItemData(
-            jam: '09:05 - 09:40',
-            startStr: '09:05',
-            endStr: '09:40',
-            mapel: 'Basis Data',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 3',
-          ),
-          JadwalItemData(
-            jam: '09:40 - 10:15',
-            startStr: '09:40',
-            endStr: '10:15',
-            mapel: 'Pemrograman Mobile',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 4',
-          ),
-          JadwalItemData(
-            jam: '10:15 - 10:50',
-            startStr: '10:15',
-            endStr: '10:50',
-            mapel: 'Pemrograman Mobile',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 5',
-          ),
-          JadwalItemData(
-            jam: '10:50 - 11:05',
-            startStr: '10:50',
-            endStr: '11:05',
-            mapel: 'Istirahat Pagi (Kantin & Bersih Kelas)',
-            guru: '',
-            ruangan: 'Area Kampus',
-            isBreak: true,
-            lesLabel: 'IST 1',
-          ),
-          JadwalItemData(
-            jam: '11:05 - 11:40',
-            startStr: '11:05',
-            endStr: '11:40',
-            mapel: 'Teks-Grafis & Multimedia',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 6',
-          ),
-          JadwalItemData(
-            jam: '11:40 - 12:15',
-            startStr: '11:40',
-            endStr: '12:15',
-            mapel: 'Teks-Grafis & Multimedia',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 7',
-          ),
-          JadwalItemData(
-            jam: '12:15 - 14:00',
-            startStr: '12:15',
-            endStr: '14:00',
-            mapel: 'Istirahat Siang & Sholat Dzuhur',
-            guru: '',
-            ruangan: 'Masjid Sekolah',
-            isBreak: true,
-            lesLabel: 'IST 2',
-          ),
-          JadwalItemData(
-            jam: '14:00 - 14:30',
-            startStr: '14:00',
-            endStr: '14:30',
-            mapel: 'Teks-Grafis & Multimedia',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 8',
-          ),
-          JadwalItemData(
-            jam: '14:30 - 15:00',
-            startStr: '14:30',
-            endStr: '15:00',
-            mapel: 'Teks-Grafis & Multimedia',
-            guru: 'Yulis, S.Kom [YS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 9',
-          ),
-          JadwalItemData(
-            jam: '15:00 - 15:50',
-            startStr: '15:00',
-            endStr: '15:50',
-            mapel: 'Pendidikan Jasmani & Olahraga (PJOK)',
-            guru: 'Fajar Putra, S.Pd [FP]',
-            ruangan: 'Lapangan Olahraga',
-            isBreak: false,
-            lesLabel: 'Les 10-11',
-          ),
-        ];
-
-      // ── 2. SELASA ──
-      case 1:
-        return const [
-          JadwalItemData(
-            jam: '07:15 - 08:27',
-            startStr: '07:15',
-            endStr: '08:27',
-            mapel: 'Pendidikan Pancasila',
-            guru: 'Purwanto, S.Pd [PW]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 1-2',
-          ),
-          JadwalItemData(
-            jam: '08:27 - 09:39',
-            startStr: '08:27',
-            endStr: '09:39',
-            mapel: 'Bahasa Inggris',
-            guru: 'Wahyuni Rahayu, S.Pd [WR]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 3-4',
-          ),
-          JadwalItemData(
-            jam: '09:39 - 10:15',
-            startStr: '09:39',
-            endStr: '10:15',
-            mapel: 'Bahasa Indonesia',
-            guru: 'M. Syarif, S.Pd [MS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 5',
-          ),
-          JadwalItemData(
-            jam: '10:15 - 10:32',
-            startStr: '10:15',
-            endStr: '10:32',
-            mapel: 'Istirahat Pagi (Kantin & Relaksasi)',
-            guru: '',
-            ruangan: 'Area Kampus',
-            isBreak: true,
-            lesLabel: 'IST 1',
-          ),
-          JadwalItemData(
-            jam: '10:32 - 11:44',
-            startStr: '10:32',
-            endStr: '11:44',
-            mapel: 'Bahasa Indonesia',
-            guru: 'M. Syarif, S.Pd [MS]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 6-7',
-          ),
-          JadwalItemData(
-            jam: '11:44 - 12:20',
-            startStr: '11:44',
-            endStr: '12:20',
-            mapel: 'Pemrograman Mobile (Praktik)',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 8',
-          ),
-          JadwalItemData(
-            jam: '12:20 - 14:00',
-            startStr: '12:20',
-            endStr: '14:00',
-            mapel: 'Istirahat Siang & Sholat Dzuhur',
-            guru: '',
-            ruangan: 'Masjid Sekolah',
-            isBreak: true,
-            lesLabel: 'IST 2',
-          ),
-          JadwalItemData(
-            jam: '14:00 - 15:50',
-            startStr: '14:00',
-            endStr: '15:50',
-            mapel: 'Pemrograman Mobile (Praktik)',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 9-11',
-          ),
-        ];
-
-      // ── 3. RABU ──
-      case 2:
-        return const [
-          JadwalItemData(
-            jam: '07:15 - 09:03',
-            startStr: '07:15',
-            endStr: '09:03',
-            mapel: 'Matematika Terapan',
-            guru: 'Evi Elida, S.Pd [EE]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 1-3',
-          ),
-          JadwalItemData(
-            jam: '09:03 - 10:15',
-            startStr: '09:03',
-            endStr: '10:15',
-            mapel: 'Pendidikan Agama & Budi Pekerti',
-            guru: 'Pendi, S.Ag [PN]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 4-5',
-          ),
-          JadwalItemData(
-            jam: '10:15 - 10:32',
-            startStr: '10:15',
-            endStr: '10:32',
-            mapel: 'Istirahat Pagi (Kantin & Relaksasi)',
-            guru: '',
-            ruangan: 'Area Kampus',
-            isBreak: true,
-            lesLabel: 'IST 1',
-          ),
-          JadwalItemData(
-            jam: '10:32 - 11:08',
-            startStr: '10:32',
-            endStr: '11:08',
-            mapel: 'Pendidikan Agama & Budi Pekerti',
-            guru: 'Pendi, S.Ag [PN]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 6',
-          ),
-          JadwalItemData(
-            jam: '11:08 - 12:20',
-            startStr: '11:08',
-            endStr: '12:20',
-            mapel: 'Sejarah Indonesia',
-            guru: 'Mardiana, S.Pd [MD]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 7-8',
-          ),
-          JadwalItemData(
-            jam: '12:20 - 14:00',
-            startStr: '12:20',
-            endStr: '14:00',
-            mapel: 'Istirahat Siang & Sholat Dzuhur',
-            guru: '',
-            ruangan: 'Masjid Sekolah',
-            isBreak: true,
-            lesLabel: 'IST 2',
-          ),
-          JadwalItemData(
-            jam: '14:00 - 15:50',
-            startStr: '14:00',
-            endStr: '15:50',
-            mapel: 'Konsentrasi Keahlian / Koding Industri (KIN)',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 9-11',
-          ),
-        ];
-
-      // ── 4. KAMIS ──
-      case 3:
-        return const [
-          JadwalItemData(
-            jam: '07:15 - 09:59',
-            startStr: '07:15',
-            endStr: '09:59',
-            mapel: 'Koding & Algoritma (KA)',
-            guru: 'Dian Nugraha, S.Kom [DN]',
-            ruangan: 'Lab RPL 2',
-            isBreak: false,
-            lesLabel: 'Les 1-4',
-          ),
-          JadwalItemData(
-            jam: '09:59 - 10:17',
-            startStr: '09:59',
-            endStr: '10:17',
-            mapel: 'Istirahat Pagi (Kantin & Relaksasi)',
-            guru: '',
-            ruangan: 'Area Kampus',
-            isBreak: true,
-            lesLabel: 'IST 1',
-          ),
-          JadwalItemData(
-            jam: '10:17 - 11:39',
-            startStr: '10:17',
-            endStr: '11:39',
-            mapel: 'Bahasa Inggris Kejuruan',
-            guru: 'Wahyuni Rahayu, S.Pd [WR]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 5-6',
-          ),
-          JadwalItemData(
-            jam: '11:39 - 12:20',
-            startStr: '11:39',
-            endStr: '12:20',
-            mapel: 'Pemrograman Web (Frontend & Backend)',
-            guru: 'Lutfi W, S.Kom [LW]',
-            ruangan: 'Lab RPL 1',
-            isBreak: false,
-            lesLabel: 'Les 7',
-          ),
-          JadwalItemData(
-            jam: '12:20 - 14:00',
-            startStr: '12:20',
-            endStr: '14:00',
-            mapel: 'Istirahat Siang & Sholat Dzuhur',
-            guru: '',
-            ruangan: 'Masjid Sekolah',
-            isBreak: true,
-            lesLabel: 'IST 2',
-          ),
-          JadwalItemData(
-            jam: '14:00 - 15:50',
-            startStr: '14:00',
-            endStr: '15:50',
-            mapel: 'Pemrograman Web (Frontend & Backend)',
-            guru: 'Lutfi W, S.Kom [LW]',
-            ruangan: 'Lab RPL 1',
-            isBreak: false,
-            lesLabel: 'Les 8-10',
-          ),
-        ];
-
-      // ── 5. JUMAT ──
-      case 4:
-      default:
-        return const [
-          JadwalItemData(
-            jam: '07:00 - 07:45',
-            startStr: '07:00',
-            endStr: '07:45',
-            mapel: 'Senam Anak Indonesia Hebat & Jumat Bersih',
-            guru: 'Guru Pembina & OSIS',
-            ruangan: 'Lapangan Utama',
-            isBreak: true,
-            lesLabel: 'Pembiasaan',
-          ),
-          JadwalItemData(
-            jam: '07:45 - 09:05',
-            startStr: '07:45',
-            endStr: '09:05',
-            mapel: 'Kewirausahaan (KWU)',
-            guru: 'Budi Santoso, S.Pd [DJ]',
-            ruangan: 'Ruang Teori XI PPLG 3',
-            isBreak: false,
-            lesLabel: 'Les 1-2',
-          ),
-          JadwalItemData(
-            jam: '09:05 - 10:25',
-            startStr: '09:05',
-            endStr: '10:25',
-            mapel: 'Pemrograman Web',
-            guru: 'Lutfi W, S.Kom [LW]',
-            ruangan: 'Lab RPL 1',
-            isBreak: false,
-            lesLabel: 'Les 3-4',
-          ),
-          JadwalItemData(
-            jam: '10:25 - 10:40',
-            startStr: '10:25',
-            endStr: '10:40',
-            mapel: 'ISHM (Istirahat & Membuang Sampah)',
-            guru: '',
-            ruangan: 'Area Kampus',
-            isBreak: true,
-            lesLabel: 'ISHM',
-          ),
-          JadwalItemData(
-            jam: '10:40 - 12:00',
-            startStr: '10:40',
-            endStr: '12:00',
-            mapel: 'Desain Antarmuka Pengguna (UI/UX)',
-            guru: 'Lutfi W, S.Kom [LW]',
-            ruangan: 'Lab RPL 1',
-            isBreak: false,
-            lesLabel: 'Les 5-6',
-          ),
-          JadwalItemData(
-            jam: '12:00 - 13:45',
-            startStr: '12:00',
-            endStr: '13:45',
-            mapel: 'Pengembangan Mandiri Berbasis Agama / Shalat Jumat',
-            guru: 'Guru Agama & Takmir',
-            ruangan: 'Masjid Sekolah',
-            isBreak: true,
-            lesLabel: 'Ibadah',
-          ),
-          JadwalItemData(
-            jam: '14:00 - 16:00',
-            startStr: '14:00',
-            endStr: '16:00',
-            mapel: 'Kegiatan Ekstrakurikuler Kejuruan & Minat',
-            guru: 'Pembina Ekskul',
-            ruangan: 'Area Kampus',
-            isBreak: false,
-            lesLabel: 'Ekskul',
-          ),
-        ];
-    }
+    final key = _hariKeys[dayIndex];
+    return widget.jadwal
+        .where((j) => j.hari.toLowerCase() == key)
+        .map((j) => JadwalItemData.fromJadwalItem(j))
+        .toList();
   }
 
   bool _isItemActive(JadwalItemData item, bool isToday) {
@@ -527,12 +125,12 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color:  AppColors.shadow.withOpacity(0.04),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -541,7 +139,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header Title & Class Tag ──
+          //  Header Title & Class Tag
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -551,14 +149,14 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color:  AppColors.infoBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      border: Border.all(color:  AppColors.infoBorder),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       Icons.calendar_month_rounded,
                       size: 17,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -566,20 +164,20 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ROSTER MAPEL RESMI',
+                        'JADWAL PELAJARAN',
                         style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.8,
-                          color: const Color(0xFF64748B),
+                          color:  AppColors.textMuted,
                         ),
                       ),
                       Text(
-                        'Semester Ganjil 2026/2027',
+                        'Roster Kelas',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
+                          color:  AppColors.textMuted,
                         ),
                       ),
                     ],
@@ -589,17 +187,17 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color:  AppColors.background,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  border: Border.all(color:  AppColors.textQuaternary),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                     Icon(
                       Icons.school_rounded,
                       size: 12,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primaryBlue,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -607,7 +205,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                        color:  AppColors.primaryDark,
                       ),
                     ),
                   ],
@@ -618,7 +216,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
 
           const SizedBox(height: 14),
 
-          // ── Horizontal Day Selector Capsules (Senin - Jumat) ──
+          //  Horizontal Day Selector Capsules (Senin - Jumat)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -640,19 +238,19 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF2563EB)
-                            : (isActualToday ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC)),
+                            ?  AppColors.primaryBlue
+                            : (isActualToday ?  AppColors.infoBg :  AppColors.background),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF2563EB)
-                              : (isActualToday ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0)),
+                              ?  AppColors.primaryBlue
+                              : (isActualToday ?  AppColors.info :  AppColors.border),
                           width: 1.0,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF2563EB).withOpacity(0.25),
+                                  color:  AppColors.primaryBlue.withOpacity(0.25),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -667,7 +265,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                               width: 6,
                               height: 6,
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : const Color(0xFF2563EB),
+                                color: isSelected ? AppColors.surface :  AppColors.primaryBlue,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -680,7 +278,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                               color: isSelected
                                   ? Colors.white
-                                  : (isActualToday ? const Color(0xFF1D4ED8) : const Color(0xFF475569)),
+                                  : (isActualToday ?  AppColors.primaryBlue :  AppColors.textSecondary),
                             ),
                           ),
                         ],
@@ -694,7 +292,34 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
 
           const SizedBox(height: 16),
 
-          // ── Timeline List of Periods ──
+          //  Timeline List of Periods
+          if (items.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color:  AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color:  AppColors.border),
+              ),
+              child: Column(
+                children: [
+                   Icon(Icons.event_busy_rounded,
+                      size: 26, color: AppColors.textMuted),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tidak ada jadwal pelajaran',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color:  AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -708,16 +333,16 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color:  AppColors.background,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color:  AppColors.border),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                       Icon(
                         Icons.coffee_rounded,
                         size: 15,
-                        color: Color(0xFFD97706),
+                        color: AppColors.warning,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -725,7 +350,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF64748B),
+                          color:  AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -735,7 +360,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                           style: GoogleFonts.inter(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF475569),
+                            color:  AppColors.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -749,16 +374,16 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isActive ? const Color(0xFFF0FDF4) : Colors.white,
+                  color: isActive ?  AppColors.successBg : AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isActive ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                    color: isActive ?  AppColors.successBorder :  AppColors.border,
                     width: isActive ? 1.5 : 1.0,
                   ),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF10B981).withOpacity(0.12),
+                            color:  AppColors.success.withOpacity(0.12),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -772,7 +397,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                       width: 90,
                       padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 6),
                       decoration: BoxDecoration(
-                        color: isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                        color: isActive ?  AppColors.successBg :  AppColors.background,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -782,7 +407,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                             style: GoogleFonts.inter(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w800,
-                              color: isActive ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                              color: isActive ?  AppColors.success :  AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 1),
@@ -792,7 +417,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: isActive ? const Color(0xFF15803D) : const Color(0xFF0F172A),
+                              color: isActive ?  AppColors.success :  AppColors.primaryDark,
                             ),
                           ),
                         ],
@@ -814,7 +439,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
-                                    color: isActive ? const Color(0xFF15803D) : const Color(0xFF0F172A),
+                                    color: isActive ?  AppColors.success :  AppColors.primaryDark,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -825,7 +450,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                   margin: const EdgeInsets.only(left: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF16A34A),
+                                    color:  AppColors.success,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -842,16 +467,16 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                   margin: const EdgeInsets.only(left: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFDCFCE7),
+                                    color:  AppColors.successBg,
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                                    border: Border.all(color:  AppColors.successBorder),
                                   ),
                                   child: Text(
-                                    'Otomatis Hadir ✓',
+                                    'Otomatis Hadir ',
                                     style: GoogleFonts.inter(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF15803D),
+                                      color:  AppColors.success,
                                     ),
                                   ),
                                 ),
@@ -860,10 +485,10 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              const Icon(
+                               Icon(
                                 Icons.person_outline_rounded,
                                 size: 12,
-                                color: Color(0xFF64748B),
+                                color: AppColors.textMuted,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -871,7 +496,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                   it.guru,
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
-                                    color: const Color(0xFF64748B),
+                                    color:  AppColors.textMuted,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -883,17 +508,17 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(
+                               Icon(
                                 Icons.meeting_room_outlined,
                                 size: 12,
-                                color: Color(0xFF94A3B8),
+                                color: AppColors.textMuted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 it.ruangan,
                                 style: GoogleFonts.inter(
                                   fontSize: 10.5,
-                                  color: const Color(0xFF94A3B8),
+                                  color:  AppColors.textMuted,
                                 ),
                               ),
                             ],

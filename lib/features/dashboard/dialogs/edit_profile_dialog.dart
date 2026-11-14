@@ -137,8 +137,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       widget.onProfileUpdated(res.data!);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
+         SnackBar(
+          content: const Text('Profil berhasil diperbarui!'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -160,14 +160,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
       margin: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration:  BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Header ──
+          //  Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             child: Row(
@@ -190,16 +190,16 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(CupertinoIcons.xmark,
+                    child:  Icon(CupertinoIcons.xmark,
                         size: 16, color: AppColors.textMuted),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.borderLight),
+           Divider(height: 1, color: AppColors.borderLight),
 
-          // ── Scrollable Body ──
+          //  Scrollable Body
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 24),
@@ -301,9 +301,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                         _buildEditableField(
                           label: 'Username',
                           controller: _usernameController,
-                          prefix: const Icon(CupertinoIcons.at,
+                          prefix:  Icon(CupertinoIcons.at,
                               size: 18, color: AppColors.textMuted),
-                          suffix: const Icon(CupertinoIcons.checkmark_seal_fill,
+                          suffix:  Icon(CupertinoIcons.checkmark_seal_fill,
                               size: 18, color: AppColors.success),
                         ),
                         const SizedBox(height: 14),
@@ -326,11 +326,11 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             ),
           ),
 
-          // ── Footer Action Buttons ──
+          //  Footer Action Buttons
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration:  BoxDecoration(
+              color: AppColors.surface,
               border: Border(
                   top: BorderSide(color: AppColors.borderLight, width: 0.5)),
             ),
@@ -342,7 +342,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                         _isSaving ? null : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(
+                      side:  BorderSide(
                           color: AppColors.borderLight, width: 1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -401,7 +401,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     return Container(
       height: 120,
       width: double.infinity,
-      color: const Color(0xFF0F172A),
+      color:  AppColors.primaryDark,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -416,7 +416,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             )
           else
-            Container(color: const Color(0xFF1E293B)),
+            Container(color:  AppColors.primaryDark),
 
           Container(color: Colors.black.withOpacity(0.35)),
 
@@ -507,7 +507,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                               'https://presensi.smknegeri1beringin.sch.id/storage/${widget.user.avatar}',
                               fit: BoxFit.cover,
                             )
-                          : const Icon(CupertinoIcons.person_fill,
+                          :  Icon(CupertinoIcons.person_fill,
                               size: 40, color: AppColors.primaryBlue),
                 ),
                 Positioned(
@@ -518,7 +518,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     child: Container(
                       width: 26,
                       height: 26,
-                      decoration: const BoxDecoration(
+                      decoration:  BoxDecoration(
                         color: AppColors.primaryBlue,
                         shape: BoxShape.circle,
                       ),
@@ -577,7 +577,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(CupertinoIcons.lock_fill,
+                     Icon(CupertinoIcons.lock_fill,
                         size: 10, color: AppColors.warning),
                     const SizedBox(width: 4),
                     Text(
@@ -645,7 +645,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
           ),
@@ -684,7 +684,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
           ),
@@ -693,9 +693,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration:  BoxDecoration(
                   color: AppColors.background,
-                  borderRadius: BorderRadius.horizontal(
+                  borderRadius: const BorderRadius.horizontal(
                       left: Radius.circular(13)),
                   border: Border(
                       right: BorderSide(color: AppColors.border)),
@@ -745,8 +745,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
               Container(
                 width: 28,
                 height: 28,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF25D366),
+                decoration:  BoxDecoration(
+                  color: AppColors.waGreen,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(CupertinoIcons.phone_fill,
@@ -762,14 +762,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF065F46),
+                        color:  AppColors.success,
                       ),
                     ),
                     Text(
                       'Notifikasi presensi otomatis akan dikirim ke nomor WhatsApp ini.',
                       style: GoogleFonts.inter(
                         fontSize: 10,
-                        color: const Color(0xFF047857),
+                        color:  AppColors.success,
                       ),
                     ),
                   ],
@@ -783,12 +783,12 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF065F46)),
+                color:  AppColors.success),
           ),
           const SizedBox(height: 4),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.successBorder),
             ),
@@ -810,12 +810,12 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF065F46)),
+                color:  AppColors.success),
           ),
           const SizedBox(height: 4),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.successBorder),
             ),
@@ -865,7 +865,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
           ),

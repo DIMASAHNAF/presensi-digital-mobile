@@ -150,21 +150,20 @@ class PresensiTodayInfo {
   }
 }
 
+/// Respons ringan `/siswa/sesi-aktif` untuk polling realtime (tanpa full reload).
 class ActiveSessionResponse {
   final bool hasSesi;
   final bool sudahHadir;
   final SessionDetail? sesi;
-  final GeofenceConfig? geofencing;
   final PresensiTodayInfo? presensiInfo;
-  final String? message;
+  final GeofenceConfig? geofencing;
 
   ActiveSessionResponse({
     required this.hasSesi,
     required this.sudahHadir,
     this.sesi,
-    this.geofencing,
     this.presensiInfo,
-    this.message,
+    this.geofencing,
   });
 
   factory ActiveSessionResponse.fromJson(Map<String, dynamic> json) {
@@ -172,13 +171,12 @@ class ActiveSessionResponse {
       hasSesi: json['has_sesi'] ?? false,
       sudahHadir: json['sudah_hadir'] ?? false,
       sesi: json['sesi'] != null ? SessionDetail.fromJson(json['sesi']) : null,
-      geofencing: json['geofencing'] != null
-          ? GeofenceConfig.fromJson(json['geofencing'])
-          : null,
       presensiInfo: json['presensi_info'] != null
           ? PresensiTodayInfo.fromJson(json['presensi_info'])
           : null,
-      message: json['message'],
+      geofencing: json['geofencing'] != null
+          ? GeofenceConfig.fromJson(json['geofencing'])
+          : null,
     );
   }
 }

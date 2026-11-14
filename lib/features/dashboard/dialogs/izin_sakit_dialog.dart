@@ -6,10 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  IZIN & SAKIT QUICK MODAL — Siswa SMKN 1 Beringin
 //  Upload Surat Keterangan Dokter / Wali & SOP Sekolah
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class IzinSakitDialog extends StatefulWidget {
   final String namaSiswa;
@@ -64,7 +62,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
             'Keterangan atau alasan permohonan wajib diisi.',
             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
-          backgroundColor: const Color(0xFFFF3B30),
+          backgroundColor:  AppColors.danger,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -112,7 +110,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res.message),
-            backgroundColor: const Color(0xFFFF3B30),
+            backgroundColor:  AppColors.danger,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -124,7 +122,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Terjadi kesalahan: $e'),
-          backgroundColor: const Color(0xFFFF3B30),
+          backgroundColor:  AppColors.danger,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -136,9 +134,9 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.82,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF2F2F7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration:  BoxDecoration(
+        color: AppColors.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -147,7 +145,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
             width: 36,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1D1D6),
+              color:  AppColors.textQuaternary,
               borderRadius: BorderRadius.circular(2.5),
             ),
           ),
@@ -171,11 +169,11 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration:  BoxDecoration(
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(CupertinoIcons.xmark, size: 16, color: Color(0xFF8E8E93)),
+                    child:  Icon(CupertinoIcons.xmark, size: 16, color: AppColors.textMuted),
                   ),
                 ),
               ],
@@ -195,21 +193,21 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEBF5FF),
+                      color:  AppColors.infoBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFB9DBFF)),
+                      border: Border.all(color:  AppColors.infoBorder),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(CupertinoIcons.info_circle_fill, color: Color(0xFF007AFF), size: 20),
+                         Icon(CupertinoIcons.info_circle_fill, color: AppColors.primaryBlue, size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'SOP Presensi Siswa: Siswa yang berhalangan hadir wajib melampirkan surat dokter (untuk Sakit) atau surat keterangan orang tua/wali (untuk Izin).',
                             style: GoogleFonts.inter(
                               fontSize: 11.5,
-                              color: const Color(0xFF004085),
+                              color:  AppColors.primaryBlue,
                               height: 1.35,
                             ),
                           ),
@@ -228,11 +226,11 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                       children: const {
                         'Sakit': Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                          child: Text('🤒 Sakit', style: TextStyle(fontWeight: FontWeight.w600)),
+                          child: Text(' Sakit', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                         'Izin': Padding(
                           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                          child: Text('📝 Izin', style: TextStyle(fontWeight: FontWeight.w600)),
+                          child: Text(' Izin', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                       },
                       onValueChanged: (v) {
@@ -246,9 +244,9 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                   // Reason Input Card
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE5E5EA)),
+                      border: Border.all(color:  AppColors.border),
                     ),
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -259,7 +257,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF8E8E93),
+                            color:  AppColors.textMuted,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -283,10 +281,10 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _lampiranFile != null ? const Color(0xFF34C759) : const Color(0xFFE5E5EA),
+                          color: _lampiranFile != null ?  AppColors.success :  AppColors.border,
                           style: BorderStyle.solid,
                         ),
                       ),
@@ -295,12 +293,12 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: _lampiranFile != null ? const Color(0xFFE8F8ED) : const Color(0xFFF2F2F7),
+                              color: _lampiranFile != null ?  AppColors.successBg :  AppColors.background,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               _lampiranFile != null ? CupertinoIcons.checkmark_alt : CupertinoIcons.camera_fill,
-                              color: _lampiranFile != null ? const Color(0xFF34C759) : const Color(0xFF007AFF),
+                              color: _lampiranFile != null ?  AppColors.success :  AppColors.primaryBlue,
                               size: 20,
                             ),
                           ),
@@ -323,7 +321,7 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                                       : 'Foto surat dokter / surat izin orang tua',
                                   style: GoogleFonts.inter(
                                     fontSize: 11.5,
-                                    color: const Color(0xFF8E8E93),
+                                    color:  AppColors.textMuted,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -344,9 +342,9 @@ class _IzinSakitDialogState extends State<IzinSakitDialog> {
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007AFF),
+                        backgroundColor:  AppColors.primaryBlue,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFF007AFF).withOpacity(0.5),
+                        disabledBackgroundColor:  AppColors.primaryBlue.withOpacity(0.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),

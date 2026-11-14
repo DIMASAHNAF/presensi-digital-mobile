@@ -9,6 +9,9 @@ import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/models/user_model.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
+import '../dialogs/device_dialog.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/services/theme_service.dart';
 
 class ProfilTab extends StatelessWidget {
   final DashboardFullModel data;
@@ -41,6 +44,77 @@ class ProfilTab extends StatelessWidget {
       context,
       user: data.user,
       onProfileUpdated: onProfileUpdated ?? (updatedUser) {},
+    );
+  }
+
+  Widget _buildThemeTile(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.mode,
+      builder: (context, mode, _) {
+        final isDark = mode == ThemeMode.dark ||
+            (mode == ThemeMode.system &&
+                MediaQuery.of(context).platformBrightness == Brightness.dark);
+        return _buildActionTile(
+          icon: isDark ? CupertinoIcons.moon_stars_fill : CupertinoIcons.sun_max_fill,
+          iconColor: AppColors.primaryIndigo,
+          label: 'Tampilan',
+          onTap: () => _openThemeSheet(context),
+        );
+      },
+    );
+  }
+
+  void _openThemeSheet(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Pilih Tampilan',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+              ),
+            ),
+            for (final entry in const [
+              (ThemeMode.system, 'Ikuti Sistem', CupertinoIcons.device_phone_portrait),
+              (ThemeMode.light, 'Terang', CupertinoIcons.sun_max_fill),
+              (ThemeMode.dark, 'Gelap', CupertinoIcons.moon_stars_fill),
+            ])
+              ListTile(
+                leading: Icon(entry.$3, color: AppColors.primaryIndigo),
+                title: Text(
+                  entry.$2,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMain,
+                  ),
+                ),
+                trailing: ThemeService.mode.value == entry.$1
+                    ? Icon(CupertinoIcons.checkmark_alt,
+                        color: AppColors.primaryBlue)
+                    : null,
+                onTap: () {
+                  ThemeService.set(entry.$1);
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 
@@ -79,7 +153,7 @@ class ProfilTab extends StatelessWidget {
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.primaryDeep,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -97,7 +171,7 @@ class ProfilTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. APPLE ID HERO CARD WITH CURVED WAVE BANNER ──
+          //  1. APPLE ID HERO CARD WITH CURVED WAVE BANNER
           _buildAppleIDHero(context, user)
               .animate()
               .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
@@ -110,64 +184,74 @@ class ProfilTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ── 2. DATA AKADEMIK & IDENTITAS SISWA (Matching Reference Photo) ──
+          //  2. DATA AKADEMIK & IDENTITAS SISWA (Matching Reference Photo)
           _buildDapodikAcademicCard(context, user)
               .animate()
               .fadeIn(duration: 400.ms, delay: 100.ms, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 16),
 
-          // ── 3. NOTIFIKASI ORANG TUA (Stacked 2-Baris Anti-Tabrakan) ──
+          //  3. NOTIFIKASI ORANG TUA (Stacked 2-Baris Anti-Tabrakan)
           _buildSectionHeader('NOTIFIKASI WHATSAPP ORANG TUA'),
           const SizedBox(height: 8),
           _buildWhatsAppNotificationCard(context, user),
 
           const SizedBox(height: 16),
 
-          // ── 4. BIOMETRIK & KEAMANAN ──
+          //  4. BIOMETRIK & KEAMANAN
           _buildSectionHeader('BIOMETRIK & KEAMANAN'),
           const SizedBox(height: 8),
           _buildGroupedCard([
             _buildTile(
               icon: CupertinoIcons.viewfinder,
               iconColor: user.isFaceEnrolled
-                  ? const Color(0xFF34C759)
-                  : const Color(0xFFFF9500),
+                  ?  AppColors.success
+                  :  AppColors.warning,
               label: 'Face ID Biometrik',
               value: user.isFaceEnrolled
                   ? 'Terverifikasi & Aktif'
                   : 'Belum Terdaftar',
               valueColor: user.isFaceEnrolled
-                  ? const Color(0xFF34C759)
-                  : const Color(0xFFFF9500),
+                  ?  AppColors.success
+                  :  AppColors.warning,
               onTap: !user.isFaceEnrolled ? onOpenEnrollment : null,
             ),
             _buildActionTile(
               icon: CupertinoIcons.lock_shield,
-              iconColor: const Color(0xFF007AFF),
+              iconColor:  AppColors.primaryBlue,
               label: 'Ubah Kata Sandi Akun',
-              isLast: true,
               onTap: () => _openChangePassword(context),
+            ),
+            _buildActionTile(
+              icon: CupertinoIcons.device_phone_portrait,
+              iconColor:  AppColors.primaryIndigo,
+              label: 'Perangkat Saya',
+              isLast: true,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                DeviceDialog.show(context);
+              },
             ),
           ]),
 
           const SizedBox(height: 16),
 
-          // ── 5. AKSI AKUN (iOS Inset Group) ──
+          //  5. AKSI AKUN (iOS Inset Group)
           _buildSectionHeader('PENGATURAN'),
           const SizedBox(height: 8),
           _buildGroupedCard([
+            _buildThemeTile(context),
             _buildActionTile(
               icon: CupertinoIcons.pencil,
-              iconColor: const Color(0xFF007AFF),
+              iconColor:  AppColors.primaryBlue,
               label: 'Edit Profil Siswa',
               onTap: () => _openEdit(context),
             ),
             _buildActionTile(
               icon: CupertinoIcons.square_arrow_right,
-              iconColor: const Color(0xFFFF3B30),
+              iconColor:  AppColors.danger,
               label: 'Keluar dari Akun',
-              textColor: const Color(0xFFFF3B30),
+              textColor:  AppColors.danger,
               isLast: true,
               onTap: onLogout,
             ),
@@ -182,7 +266,7 @@ class ProfilTab extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF8E8E93),
+                color:  AppColors.textMuted,
               ),
             ),
           ),
@@ -191,9 +275,7 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  1. APPLE ID HERO CARD WITH CURVED WAVE BANNER
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildAppleIDHero(BuildContext context, UserModel user) {
     final hasBanner = user.banner != null && user.banner!.isNotEmpty;
@@ -201,12 +283,12 @@ class ProfilTab extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color:  AppColors.shadow.withOpacity(0.04),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -214,7 +296,7 @@ class ProfilTab extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ── Wave Curved Header Banner ──
+          //  Wave Curved Header Banner
           ClipPath(
             clipper: _ProfileWaveClipper(),
             child: Container(
@@ -223,9 +305,9 @@ class ProfilTab extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF0F172A),
-                    const Color(0xFF1E293B),
-                    const Color(0xFF2563EB).withOpacity(0.85),
+                     AppColors.primaryDeep,
+                     AppColors.primaryDeep,
+                     AppColors.primaryBlue.withOpacity(0.85),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -271,7 +353,7 @@ class ProfilTab extends StatelessWidget {
                             width: 6,
                             height: 6,
                             decoration: BoxDecoration(
-                              color: user.isFaceEnrolled ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                              color: user.isFaceEnrolled ? AppColors.success :  AppColors.warning,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -329,7 +411,7 @@ class ProfilTab extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(
               children: [
-                // ── Perfectly Round Circular Avatar (Anti-Aliased Hardware Clip) ──
+                //  Circular avatar (anti-aliased clip)
                 Transform.translate(
                   offset: const Offset(0, -38),
                   child: Stack(
@@ -340,7 +422,7 @@ class ProfilTab extends StatelessWidget {
                         height: 86,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFF1F5F9),
+                          color:  AppColors.background,
                           border: Border.all(color: Colors.white, width: 3.5),
                           boxShadow: [
                             BoxShadow(
@@ -372,7 +454,7 @@ class ProfilTab extends StatelessWidget {
                             width: 22,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981),
+                              color:  AppColors.success,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2.2),
                             ),
@@ -404,15 +486,15 @@ class ProfilTab extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
+                                color:  AppColors.primaryDark,
                                 letterSpacing: -0.3,
                               ),
                             ),
                           ),
                           const SizedBox(width: 5),
-                          const Icon(
+                           Icon(
                             Icons.verified_rounded,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.primaryBlue,
                             size: 17,
                           ),
                         ],
@@ -425,7 +507,7 @@ class ProfilTab extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF64748B),
+                          color:  AppColors.textMuted,
                         ),
                       ),
 
@@ -451,17 +533,17 @@ class ProfilTab extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
+                                  color:  AppColors.infoBg,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                  border: Border.all(color:  AppColors.infoBorder),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                     Icon(
                                       CupertinoIcons.link,
                                       size: 12,
-                                      color: Color(0xFF2563EB),
+                                      color: AppColors.primaryBlue,
                                     ),
                                     const SizedBox(width: 5),
                                     Flexible(
@@ -470,19 +552,19 @@ class ProfilTab extends StatelessWidget {
                                         style: GoogleFonts.inter(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF2563EB),
+                                          color:  AppColors.primaryBlue,
                                           decoration: TextDecoration.underline,
-                                          decorationColor: const Color(0xFF2563EB),
+                                          decorationColor:  AppColors.primaryBlue,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     const SizedBox(width: 4),
-                                    const Icon(
+                                     Icon(
                                       Icons.open_in_new_rounded,
                                       size: 11,
-                                      color: Color(0xFF2563EB),
+                                      color: AppColors.primaryBlue,
                                     ),
                                   ],
                                 ),
@@ -502,20 +584,18 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  2. DAPODIK ACADEMIC IDENTITY CARD (Photo 1 Reference)
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildDapodikAcademicCard(BuildContext context, UserModel user) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.03),
+            color:  AppColors.shadow.withOpacity(0.03),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -532,23 +612,23 @@ class ProfilTab extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF64748B),
+                  color:  AppColors.textMuted,
                   letterSpacing: 0.6,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color:  AppColors.background,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  border: Border.all(color:  AppColors.textQuaternary),
                 ),
                 child: Text(
                   'DAPODIK',
                   style: GoogleFonts.inter(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF475569),
+                    color:  AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -566,9 +646,9 @@ class ProfilTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color:  AppColors.background,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color:  AppColors.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,7 +662,7 @@ class ProfilTab extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF64748B),
+                                color:  AppColors.textMuted,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -591,7 +671,7 @@ class ProfilTab extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
+                                color:  AppColors.primaryDark,
                               ),
                             ),
                           ],
@@ -604,7 +684,7 @@ class ProfilTab extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2563EB),
+                            color:  AppColors.primaryBlue,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -621,9 +701,9 @@ class ProfilTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color:  AppColors.background,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color:  AppColors.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -640,7 +720,7 @@ class ProfilTab extends StatelessWidget {
                                   style: GoogleFonts.inter(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF64748B),
+                                    color:  AppColors.textMuted,
                                   ),
                                 ),
                                 GestureDetector(
@@ -649,16 +729,16 @@ class ProfilTab extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: AppColors.surface,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                                      border: Border.all(color:  AppColors.textQuaternary),
                                     ),
                                     child: Text(
                                       'Salin',
                                       style: GoogleFonts.inter(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF2563EB),
+                                        color:  AppColors.primaryBlue,
                                       ),
                                     ),
                                   ),
@@ -671,7 +751,7 @@ class ProfilTab extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
+                                color:  AppColors.primaryDark,
                               ),
                             ),
                           ],
@@ -682,7 +762,7 @@ class ProfilTab extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
+                            color:  AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -697,9 +777,7 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  HELPERS & STYLED WIDGETS
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -709,7 +787,7 @@ class ProfilTab extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 10.5,
           fontWeight: FontWeight.w800,
-          color: const Color(0xFF64748B),
+          color:  AppColors.textMuted,
           letterSpacing: 0.8,
         ),
       ),
@@ -727,12 +805,12 @@ class ProfilTab extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.02),
+            color:  AppColors.shadow.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -748,13 +826,13 @@ class ProfilTab extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
+                  color:  AppColors.successBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child:  Icon(
                   CupertinoIcons.person_crop_circle_badge_checkmark,
                   size: 20,
-                  color: Color(0xFF10B981),
+                  color: AppColors.success,
                 ),
               ),
               const SizedBox(width: 12),
@@ -767,7 +845,7 @@ class ProfilTab extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF94A3B8),
+                        color:  AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -776,7 +854,7 @@ class ProfilTab extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color:  AppColors.primaryDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -788,7 +866,7 @@ class ProfilTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-          const Divider(height: 1, indent: 52, color: Color(0xFFF1F5F9)),
+           Divider(height: 1, indent: 52, color: AppColors.background),
           const SizedBox(height: 12),
 
           // Row 2: Nomor WhatsApp Terdaftar
@@ -801,7 +879,7 @@ class ProfilTab extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
+                    color:  AppColors.successBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const WhatsAppBrandIcon(size: 24),
@@ -816,7 +894,7 @@ class ProfilTab extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
+                          color:  AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -825,23 +903,23 @@ class ProfilTab extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          color: hasPhone ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                          color: hasPhone ?  AppColors.success :  AppColors.textMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                 Icon(
                   CupertinoIcons.chevron_right,
                   size: 14,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted,
                 ),
               ],
             ),
           ),
 
           const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+           Divider(height: 1, color: AppColors.background),
           const SizedBox(height: 12),
 
           // Row 3: Tombol Kirim Pesan Uji Coba ke WhatsApp Wali
@@ -849,7 +927,7 @@ class ProfilTab extends StatelessWidget {
             width: double.infinity,
             child: CupertinoButton(
               padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
-              color: const Color(0xFFECFDF5),
+              color:  AppColors.successBg,
               borderRadius: BorderRadius.circular(14),
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -864,7 +942,7 @@ class ProfilTab extends StatelessWidget {
                       ),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      backgroundColor: const Color(0xFF0F172A),
+                      backgroundColor: AppColors.primaryDeep,
                     ),
                   );
                 }
@@ -879,7 +957,7 @@ class ProfilTab extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF047857),
+                      color:  AppColors.success,
                     ),
                   ),
                 ],
@@ -894,12 +972,12 @@ class ProfilTab extends StatelessWidget {
   Widget _buildGroupedCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.02),
+            color:  AppColors.shadow.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -940,10 +1018,10 @@ class ProfilTab extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: (iconColor ?? const Color(0xFF2563EB)).withOpacity(0.12),
+                      color: (iconColor ??  AppColors.primaryBlue).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon ?? Icons.circle, size: 16, color: iconColor ?? const Color(0xFF2563EB)),
+                    child: Icon(icon ?? Icons.circle, size: 16, color: iconColor ??  AppColors.primaryBlue),
                   ),
                 const SizedBox(width: 14),
                 Text(
@@ -951,7 +1029,7 @@ class ProfilTab extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1E293B),
+                    color:  AppColors.primaryDark,
                   ),
                 ),
                 const Spacer(),
@@ -963,15 +1041,15 @@ class ProfilTab extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: valueColor ?? const Color(0xFF64748B),
+                        color: valueColor ??  AppColors.textMuted,
                       ),
                     ),
                     if (onTap != null) ...[
                       const SizedBox(width: 6),
-                      const Icon(
+                       Icon(
                         CupertinoIcons.chevron_right,
                         size: 13,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted,
                       ),
                     ],
                   ],
@@ -981,7 +1059,7 @@ class ProfilTab extends StatelessWidget {
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 60, color: Color(0xFFF1F5F9)),
+           Divider(height: 1, indent: 60, color: AppColors.background),
       ],
     );
   }
@@ -1021,28 +1099,28 @@ class ProfilTab extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
-                    color: textColor ?? const Color(0xFF1E293B),
+                    color: textColor ??  AppColors.primaryDark,
                   ),
                 ),
                 const Spacer(),
-                const Icon(
+                 Icon(
                   CupertinoIcons.chevron_right,
                   size: 14,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted,
                 ),
               ],
             ),
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 60, color: Color(0xFFF1F5F9)),
+           Divider(height: 1, indent: 60, color: AppColors.background),
       ],
     );
   }
 
   Widget _buildFallback(UserModel user) {
     return Container(
-      color: const Color(0xFF2563EB),
+      color:  AppColors.primaryBlue,
       alignment: Alignment.center,
       child: Text(
         user.nama.isNotEmpty ? user.nama[0] : 'S',
@@ -1056,9 +1134,7 @@ class ProfilTab extends StatelessWidget {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  CURVED WAVE CLIPPER FOR PROFILE HEADER (Reference: Photo 5)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class _ProfileWaveClipper extends CustomClipper<Path> {
   @override
@@ -1087,9 +1163,7 @@ class _ProfileWaveClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  OFFICIAL WHATSAPP BRAND BADGE (Zero AI-Slop, Real Iconography)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  OFFICIAL WHATSAPP BRAND BADGE
 
 class WhatsAppBrandIcon extends StatelessWidget {
   final double size;
@@ -1101,11 +1175,11 @@ class WhatsAppBrandIcon extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF25D366),
+        color:  AppColors.waGreen,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF25D366).withOpacity(0.30),
+            color:  AppColors.waGreen.withOpacity(0.30),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1127,9 +1201,9 @@ class WhatsAppBrandIcon extends StatelessWidget {
                   child: Container(
                     width: size * 0.22,
                     height: size * 0.22,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                    decoration:  BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(2),
                       ),
                     ),
@@ -1140,15 +1214,15 @@ class WhatsAppBrandIcon extends StatelessWidget {
               Container(
                 width: size * 0.60,
                 height: size * 0.60,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration:  BoxDecoration(
+                  color: AppColors.surface,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Icon(
                     Icons.phone_rounded,
                     size: size * 0.38,
-                    color: const Color(0xFF25D366),
+                    color:  AppColors.waGreen,
                   ),
                 ),
               ),

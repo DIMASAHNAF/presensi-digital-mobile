@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../dialogs/classmate_detail_dialog.dart';
+import '../../../core/theme/app_theme.dart';
 
 class TemanTab extends StatefulWidget {
   final DashboardFullModel data;
@@ -72,16 +73,16 @@ class _TemanTabState extends State<TemanTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. LIVE CLASS ATTENDANCE RADAR HEADER ──
+          //  1. LIVE CLASS ATTENDANCE RADAR HEADER
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              border: Border.all(color:  AppColors.border, width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0F172A).withOpacity(0.04),
+                  color:  AppColors.shadow.withOpacity(0.04),
                   blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
@@ -101,7 +102,7 @@ class _TemanTabState extends State<TemanTab> {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF64748B),
+                            color:  AppColors.textMuted,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -111,7 +112,7 @@ class _TemanTabState extends State<TemanTab> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF0F172A),
+                            color:  AppColors.primaryDark,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -120,17 +121,17 @@ class _TemanTabState extends State<TemanTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color:  AppColors.infoBg,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                        border: Border.all(color:  AppColors.infoBorder),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                           Icon(
                             CupertinoIcons.person_2_fill,
                             size: 15,
-                            color: Color(0xFF2563EB),
+                            color: AppColors.primaryBlue,
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -138,7 +139,7 @@ class _TemanTabState extends State<TemanTab> {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF2563EB),
+                              color:  AppColors.primaryBlue,
                             ),
                           ),
                         ],
@@ -159,12 +160,12 @@ class _TemanTabState extends State<TemanTab> {
                         if (hadirCount > 0)
                           Expanded(
                             flex: hadirCount,
-                            child: Container(color: const Color(0xFF10B981)),
+                            child: Container(color:  AppColors.success),
                           ),
                         if (belumCount > 0)
                           Expanded(
                             flex: belumCount,
-                            child: Container(color: const Color(0xFFE2E8F0)),
+                            child: Container(color:  AppColors.border),
                           ),
                       ],
                     ),
@@ -181,8 +182,8 @@ class _TemanTabState extends State<TemanTab> {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF10B981),
+                          decoration:  BoxDecoration(
+                            color: AppColors.success,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -192,7 +193,7 @@ class _TemanTabState extends State<TemanTab> {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF10B981),
+                            color:  AppColors.success,
                           ),
                         ),
                       ],
@@ -202,7 +203,7 @@ class _TemanTabState extends State<TemanTab> {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF94A3B8),
+                        color:  AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -216,27 +217,27 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 14),
 
-          // ── 2. SEARCH FIELD ──
+          //  2. SEARCH FIELD
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              border: Border.all(color:  AppColors.border, width: 1.0),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
-              style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.inter(fontSize: 13.5, color:  AppColors.primaryDark),
               decoration: InputDecoration(
                 hintText: 'Cari teman sekelas...',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 13,
-                  color: const Color(0xFF94A3B8),
+                  color:  AppColors.textMuted,
                 ),
-                prefixIcon: const Icon(
+                prefixIcon:  Icon(
                   CupertinoIcons.search,
                   size: 18,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted,
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? GestureDetector(
@@ -244,10 +245,10 @@ class _TemanTabState extends State<TemanTab> {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
                         },
-                        child: const Icon(
+                        child:  Icon(
                           CupertinoIcons.clear_thick_circled,
                           size: 16,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textMuted,
                         ),
                       )
                     : null,
@@ -262,7 +263,7 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 12),
 
-          // ── 3. FILTER CHIPS (Muat 100% Layar Mobile tanpa Terpotong) ──
+          //  3. Filter chips (full-width mobile layout)
           Row(
             children: [
               Expanded(
@@ -281,7 +282,7 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 16),
 
-          // ── 4. CLASSMATES LIST ──
+          //  4. CLASSMATES LIST
           if (filtered.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
@@ -292,13 +293,13 @@ class _TemanTabState extends State<TemanTab> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color:  AppColors.background,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       CupertinoIcons.person_2,
                       size: 26,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -306,7 +307,7 @@ class _TemanTabState extends State<TemanTab> {
                     'Tidak ada teman yang cocok',
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF64748B),
+                      color:  AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -315,12 +316,12 @@ class _TemanTabState extends State<TemanTab> {
           else
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                border: Border.all(color:  AppColors.border, width: 1.0),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0F172A).withOpacity(0.02),
+                    color:  AppColors.shadow.withOpacity(0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -331,7 +332,7 @@ class _TemanTabState extends State<TemanTab> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filtered.length,
                 separatorBuilder: (_, __) =>
-                    const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
+                     Divider(height: 1, indent: 70, color: AppColors.background),
                 itemBuilder: (context, index) {
                   final cm = filtered[index];
                   final isHadir = cm.statusHariIni.toLowerCase() == 'hadir';
@@ -350,14 +351,14 @@ class _TemanTabState extends State<TemanTab> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: Row(
                         children: [
-                          // ── Clean Circular Avatar (Tanpa Titik Ganda) ──
+                          //  Clean Circular Avatar (Tanpa Titik Ganda)
                           Container(
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFF1F5F9),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              color:  AppColors.background,
+                              border: Border.all(color:  AppColors.border),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(100),
@@ -372,7 +373,7 @@ class _TemanTabState extends State<TemanTab> {
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: const Color(0xFF2563EB),
+                                            color:  AppColors.primaryBlue,
                                           ),
                                         ),
                                       ),
@@ -383,7 +384,7 @@ class _TemanTabState extends State<TemanTab> {
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF2563EB),
+                                          color:  AppColors.primaryBlue,
                                         ),
                                       ),
                                     ),
@@ -402,7 +403,7 @@ class _TemanTabState extends State<TemanTab> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0F172A),
+                                    color:  AppColors.primaryDark,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -412,7 +413,7 @@ class _TemanTabState extends State<TemanTab> {
                                   'NISN • ${cm.username}',
                                   style: GoogleFonts.inter(
                                     fontSize: 11.5,
-                                    color: const Color(0xFF64748B),
+                                    color:  AppColors.textMuted,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -425,22 +426,22 @@ class _TemanTabState extends State<TemanTab> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isHadir ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                              color: isHadir ?  AppColors.successBg :  AppColors.background,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: isHadir ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                                color: isHadir ?  AppColors.successBorder :  AppColors.border,
                               ),
                             ),
                             child: Text(
                               isHadir
                                   ? (cm.jamAbsen != null && cm.jamAbsen!.isNotEmpty
                                       ? 'Hadir ${cm.jamAbsen}'
-                                      : 'Hadir ✓')
+                                      : 'Hadir ')
                                   : 'Belum Hadir',
                               style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: isHadir ? const Color(0xFF047857) : const Color(0xFF64748B),
+                                color: isHadir ?  AppColors.success :  AppColors.textMuted,
                               ),
                             ),
                           ),
@@ -469,16 +470,16 @@ class _TemanTabState extends State<TemanTab> {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB) : Colors.white,
+          color: isSelected ?  AppColors.primaryBlue : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            color: isSelected ?  AppColors.primaryBlue :  AppColors.border,
             width: 1.0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.2),
+                    color:  AppColors.primaryBlue.withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -492,7 +493,7 @@ class _TemanTabState extends State<TemanTab> {
           style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF475569),
+            color: isSelected ? Colors.white :  AppColors.textSecondary,
           ),
         ),
       ),

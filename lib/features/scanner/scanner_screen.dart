@@ -6,21 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../core/services/device_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/models/session_model.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/telemetry_service.dart';
 import '../../core/services/location_service.dart';
+import '../../core/services/scan_queue_service.dart';
+import 'package:image/image.dart' as img;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  SCANNER SCREEN — Authentic Apple iOS Face ID Experience
+//  SCANNER SCREEN — Face ID scan experience
 //  • Natural 1x Wide Angle View (No awkward digital zoom)
 //  • Apple Face ID Setup 3D Radial Tick Dial (60 Sensory Rays)
 //  • Dynamic TrueDepth Holographic Biometric Depth Mesh
 //  • Auto-Recognition & Tactile Shutter Trigger
 //  • Iconic Apple Face ID Verification HUD Modal
 //  • Vector Morphing Face Glyph -> Spring Checkmark
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 enum ScanState { ready, processing, success, failed }
 enum LivenessState { waitingFace, faceAligned, actionSuccess }
@@ -45,6 +47,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   List<CameraDescription>? _cameras;
   int _selectedCameraIdx = 0;
   bool _isCameraReady = false;
+  String _cameraErrorDetail = '';
 
   ScanState _scanState = ScanState.ready;
   LivenessState _livenessState = LivenessState.waitingFace;
@@ -53,6 +56,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   String _livenessPrompt = 'Posisikan wajah di dalam lingkaran';
   String _scanErrorMessage = '';
   String _waktuScanSuccess = '';
+  bool _scanQueuedOffline = false;
   bool _showShutterFlash = false;
 
   GeofenceResult? _geofenceResult;
@@ -176,38 +180,67 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 
   Future<void> _setupCameraController(CameraDescription camera) async {
-    // Use ResolutionPreset.high (1280x720 / 16:9) to eliminate unnatural 4:3 zoom cropping
-    final controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
+    // Buang controller lama dulu agar stream kamera tidak tertinggal
+    // (web: stream hidup -> NotReadableError saat init ulang).
+    await _disposeCamera();
 
-    _cameraController = controller;
+    // Web kadang melaporkan kamera "sibuk" sesaat; coba beberapa kali.
+    const int maxAttempts = 4;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Use ResolutionPreset.high (1280x720 / 16:9) to eliminate unnatural 4:3 zoom cropping
+      final controller = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
 
-    try {
-      await controller.initialize();
-      // Reset zoom level to minimum 1.0x wide-angle
+      _cameraController = controller;
+
       try {
-        final minZoom = await controller.getMinZoomLevel();
-        await controller.setZoomLevel(minZoom);
-      } catch (_) {
-        // Zoom API not supported on all web platforms
-      }
+        await controller.initialize();
+        // Reset zoom level to minimum 1.0x wide-angle
+        try {
+          final minZoom = await controller.getMinZoomLevel();
+          await controller.setZoomLevel(minZoom);
+        } catch (_) {
+          // Zoom API not supported on all web platforms
+        }
 
-      if (!mounted) return;
-      setState(() {
-        _isCameraReady = true;
-        _armScanner();
-      });
-    } catch (e) {
-      if (mounted) {
+        if (!mounted) return;
         setState(() {
-          _scanState = ScanState.failed;
-          _scanErrorMessage = 'Gagal menginisialisasi kamera: $e';
+          _isCameraReady = true;
+          _armScanner();
         });
+        return;
+      } catch (e) {
+        _cameraErrorDetail = e.toString();
+        TelemetryService.report('camera', e);
+        try {
+          await controller.dispose();
+        } catch (_) {}
+        _cameraController = null;
+        if (attempt < maxAttempts) {
+          await Future.delayed(Duration(milliseconds: 350 * attempt));
+        }
       }
+    }
+
+    if (mounted) {
+      setState(() {
+        _scanState = ScanState.failed;
+        _scanErrorMessage = 'Gagal menginisialisasi kamera: $_cameraErrorDetail';
+      });
+    }
+  }
+
+  Future<void> _disposeCamera() async {
+    final controller = _cameraController;
+    _cameraController = null;
+    if (controller != null) {
+      try {
+        await controller.dispose();
+      } catch (_) {}
     }
   }
 
@@ -218,7 +251,6 @@ class _ScannerScreenState extends State<ScannerScreen>
     setState(() => _isCameraReady = false);
 
     _selectedCameraIdx = (_selectedCameraIdx + 1) % _cameras!.length;
-    await _cameraController?.dispose();
     await _setupCameraController(_cameras![_selectedCameraIdx]);
   }
 
@@ -248,7 +280,7 @@ class _ScannerScreenState extends State<ScannerScreen>
             _geofenceResult?.errorMessage ??
                 'Presensi ditolak: Anda berada di luar radius resmi sekolah.',
           ),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: const Color(0xFFFF3B30),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -263,7 +295,7 @@ class _ScannerScreenState extends State<ScannerScreen>
       _actionProgress = 0.15;
     });
 
-    // Authentic Apple Face ID rapid radial tick sweep: 10 steps x 35ms = 350ms
+    // Face ID radial tick sweep: 10 steps x 35ms = 350ms
     const int steps = 10;
     int currentStep = 0;
     _autoAlignmentTimer =
@@ -306,7 +338,7 @@ class _ScannerScreenState extends State<ScannerScreen>
             _geofenceResult?.errorMessage ??
                 'Presensi ditolak: Anda berada di luar radius resmi sekolah.',
           ),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: const Color(0xFFFF3B30),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -346,16 +378,21 @@ class _ScannerScreenState extends State<ScannerScreen>
       final lat = pos?.latitude ?? widget.geofenceConfig.latitude;
       final lng = pos?.longitude ?? widget.geofenceConfig.longitude;
       final accuracy = pos?.accuracy ?? 10.0;
-      final isMocked = pos?.isMocked ?? false;
+      final isMocked = (pos?.isMocked ?? false) ||
+          await LocationService.isMockLocationNative();
+      final gpsTimestampMs = pos?.timestamp.millisecondsSinceEpoch;
 
       // 3. Submit payload to Rust microservice API
+      final deviceId = await DeviceService.getDeviceId();
       final res = await ApiService.submitFaceScan(
         imageBase64: base64Image,
         latitude: lat,
         longitude: lng,
         accuracy: accuracy,
         isMocked: isMocked,
+        gpsTimestampMs: gpsTimestampMs,
         sesiId: widget.sessionDetail?.id,
+        deviceId: deviceId,
       );
 
       if (!mounted) return;
@@ -376,6 +413,43 @@ class _ScannerScreenState extends State<ScannerScreen>
 
         // Automatically pop back to dashboard after 1.8 seconds
         Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) {
+            Navigator.of(context).pop(true);
+          }
+        });
+      } else if (res.offline && ScanQueueService.supportsOfflineQueue) {
+        // B7. Tanpa koneksi: simpan lokal, kirim otomatis saat online kembali.
+        var queuedImage = base64Image;
+        try {
+          final rawBytes = base64Decode(base64Image.split(',').last);
+          final decoded = img.decodeImage(rawBytes);
+          if (decoded != null) {
+            final resized = img.copyResize(decoded, width: 720);
+            queuedImage = 'data:image/jpeg;base64,'
+                '${base64Encode(img.encodeJpg(resized, quality: 60))}';
+          }
+        } catch (_) {}
+
+        await ScanQueueService.enqueue(
+          imageBase64: queuedImage,
+          latitude: lat,
+          longitude: lng,
+          accuracy: accuracy,
+          isMocked: isMocked,
+          gpsTimestampMs: gpsTimestampMs,
+          sesiId: widget.sessionDetail?.id,
+          deviceId: deviceId,
+        );
+
+        if (!mounted) return;
+        HapticFeedback.mediumImpact();
+        final pending = await ScanQueueService.pendingCount();
+        setState(() {
+          _scanState = ScanState.success;
+          _scanQueuedOffline = true;
+          _waktuScanSuccess = 'Tersimpan lokal • $pending menunggu';
+        });
+        Future.delayed(const Duration(milliseconds: 2200), () {
           if (mounted) {
             Navigator.of(context).pop(true);
           }
@@ -414,13 +488,11 @@ class _ScannerScreenState extends State<ScannerScreen>
     _pulseController.dispose();
     _scanBeamController.dispose();
     _hudMorphController.dispose();
-    _cameraController?.dispose();
+    _disposeCamera();
     super.dispose();
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   //  UI WIDGET TREE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   @override
   Widget build(BuildContext context) {
@@ -435,7 +507,7 @@ class _ScannerScreenState extends State<ScannerScreen>
           return Stack(
             fit: StackFit.expand,
             children: [
-              // ── 1. Top Navigation Bar & Apple iOS Header ──
+              //  1. Top Navigation Bar & Apple iOS Header
               SafeArea(
                 child: Padding(
                   padding:
@@ -478,17 +550,17 @@ class _ScannerScreenState extends State<ScannerScreen>
                             ),
                             decoration: BoxDecoration(
                               color: !widget.geofenceConfig.active
-                                  ? const Color(0xFF10B981).withOpacity(0.20)
+                                  ? const Color(0xFF34C759).withOpacity(0.20)
                                   : (_isGpsValid
-                                      ? const Color(0xFF10B981).withOpacity(0.20)
-                                      : const Color(0xFFEF4444).withOpacity(0.20)),
+                                      ? const Color(0xFF34C759).withOpacity(0.20)
+                                      : const Color(0xFFFF3B30).withOpacity(0.20)),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: !widget.geofenceConfig.active
-                                    ? const Color(0xFF34D399).withOpacity(0.40)
+                                    ? const Color(0xFF30D158).withOpacity(0.40)
                                     : (_isGpsValid
-                                        ? const Color(0xFF34D399).withOpacity(0.40)
-                                        : const Color(0xFFF87171).withOpacity(0.40)),
+                                        ? const Color(0xFF30D158).withOpacity(0.40)
+                                        : const Color(0xFFFF6961).withOpacity(0.40)),
                               ),
                             ),
                             child: Row(
@@ -500,10 +572,10 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: !widget.geofenceConfig.active
-                                        ? const Color(0xFF34D399)
+                                        ? const Color(0xFF30D158)
                                         : (_isGpsValid
-                                            ? const Color(0xFF34D399)
-                                            : const Color(0xFFF87171)),
+                                            ? const Color(0xFF30D158)
+                                            : const Color(0xFFFF6961)),
                                   ),
                                 ),
                                 const SizedBox(width: 7),
@@ -571,7 +643,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                 ),
               ),
 
-              // ── 2. Apple Face ID Center Biometric Portal ──
+              //  2. Apple Face ID Center Biometric Portal
               Center(
                 child: Stack(
                   alignment: Alignment.center,
@@ -603,7 +675,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                         boxShadow: [
                           BoxShadow(
                             color: _livenessState == LivenessState.faceAligned
-                                ? const Color(0xFF10B981).withOpacity(0.35)
+                                ? const Color(0xFF34C759).withOpacity(0.35)
                                 : Colors.black.withOpacity(0.60),
                             blurRadius: 24,
                             spreadRadius: 2,
@@ -645,7 +717,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: _livenessState == LivenessState.faceAligned
-                                ? const Color(0xFF34D399).withOpacity(0.70)
+                                ? const Color(0xFF30D158).withOpacity(0.70)
                                 : Colors.white.withOpacity(0.30),
                             width: 2.0,
                           ),
@@ -656,7 +728,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                 ),
               ),
 
-              // ── 3. Bottom Apple Controls & Dynamic Status Capsule ──
+              //  3. Bottom Apple Controls & Dynamic Status Capsule
               if (_scanState == ScanState.ready)
                 Positioned(
                   left: 20,
@@ -693,12 +765,12 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   colors: _livenessState ==
                                           LivenessState.faceAligned
                                       ? [
-                                          const Color(0xFF10B981),
-                                          const Color(0xFF059669)
+                                          const Color(0xFF34C759),
+                                          const Color(0xFF34C759)
                                         ]
                                       : [
-                                          const Color(0xFF0A84FF),
-                                          const Color(0xFF0066CC)
+                                          const Color(0xFF007AFF),
+                                          const Color(0xFF007AFF)
                                         ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -707,8 +779,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   BoxShadow(
                                     color: (_livenessState ==
                                                 LivenessState.faceAligned
-                                            ? const Color(0xFF10B981)
-                                            : const Color(0xFF0A84FF))
+                                            ? const Color(0xFF34C759)
+                                            : const Color(0xFF007AFF))
                                         .withOpacity(0.45),
                                     blurRadius: 16,
                                     offset: const Offset(0, 4),
@@ -742,13 +814,13 @@ class _ScannerScreenState extends State<ScannerScreen>
                   ),
                 ),
 
-              // ── 4. Shutter Flash Effect (140ms pure white flash) ──
+              //  4. Shutter Flash Effect (140ms pure white flash)
               if (_showShutterFlash)
                 Container(
                   color: Colors.white,
                 ),
 
-              // ── 5. Canggih Apple Face ID System Sheet Modal Overlays ──
+              //  5. Face ID system sheet modal overlays
               if (_scanState == ScanState.processing)
                 _buildAppleFaceIdModal(
                   title: 'Memverifikasi Face ID',
@@ -758,10 +830,12 @@ class _ScannerScreenState extends State<ScannerScreen>
 
               if (_scanState == ScanState.success)
                 _buildAppleFaceIdModal(
-                  title: 'Presensi Berhasil',
-                  subtitle: _waktuScanSuccess.isNotEmpty
-                      ? 'Pukul $_waktuScanSuccess WIB • Tepat Waktu'
-                      : 'Kehadiran telah tercatat di sistem',
+                  title: _scanQueuedOffline ? 'Tersimpan Offline' : 'Presensi Berhasil',
+                  subtitle: _scanQueuedOffline
+                      ? 'Presensi akan dikirim otomatis saat internet kembali ($_waktuScanSuccess)'
+                      : (_waktuScanSuccess.isNotEmpty
+                          ? 'Pukul $_waktuScanSuccess WIB • Tepat Waktu'
+                          : 'Kehadiran telah tercatat di sistem'),
                   isSuccess: true,
                 ),
 
@@ -774,17 +848,15 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   //  CAMERA VIEWPORT (Natural Wide Angle, 1:1 Aspect Fit)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildCameraViewport() {
     if (!_isCameraReady || _cameraController == null) {
       return Container(
-        color: const Color(0xFF111827),
+        color: const Color(0xFF1C1C1E),
         child: const Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF0A84FF),
+            color: Color(0xFF007AFF),
             strokeWidth: 2.5,
           ),
         ),
@@ -803,9 +875,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   //  DYNAMIC APPLE STATUS CAPSULE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildAppleStatusCapsule() {
     final percent = (_actionProgress * 100).toInt();
@@ -824,9 +894,9 @@ class _ScannerScreenState extends State<ScannerScreen>
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
               color: isComplete
-                  ? const Color(0xFF34D399).withOpacity(0.70)
+                  ? const Color(0xFF30D158).withOpacity(0.70)
                   : isAligned
-                      ? const Color(0xFF0A84FF).withOpacity(0.60)
+                      ? const Color(0xFF007AFF).withOpacity(0.60)
                       : Colors.white.withOpacity(0.18),
               width: 1.2,
             ),
@@ -848,17 +918,17 @@ class _ScannerScreenState extends State<ScannerScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isComplete
-                      ? const Color(0xFF34D399)
+                      ? const Color(0xFF30D158)
                       : isAligned
-                          ? const Color(0xFF0A84FF)
-                          : const Color(0xFFFBBF24),
+                          ? const Color(0xFF007AFF)
+                          : const Color(0xFFFFCC00),
                   boxShadow: [
                     BoxShadow(
                       color: (isComplete
-                              ? const Color(0xFF34D399)
+                              ? const Color(0xFF30D158)
                               : isAligned
-                                  ? const Color(0xFF0A84FF)
-                                  : const Color(0xFFFBBF24))
+                                  ? const Color(0xFF007AFF)
+                                  : const Color(0xFFFFCC00))
                           .withOpacity(0.70),
                       blurRadius: 6,
                     ),
@@ -885,8 +955,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                       const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: isComplete
-                        ? const Color(0xFF10B981).withOpacity(0.25)
-                        : const Color(0xFF0A84FF).withOpacity(0.25),
+                        ? const Color(0xFF34C759).withOpacity(0.25)
+                        : const Color(0xFF007AFF).withOpacity(0.25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -895,8 +965,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
                       color: isComplete
-                          ? const Color(0xFF34D399)
-                          : const Color(0xFF60A5FA),
+                          ? const Color(0xFF30D158)
+                          : const Color(0xFF007AFF),
                     ),
                   ),
                 ),
@@ -908,9 +978,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //  AUTHENTIC APPLE FACE ID HUD MODAL (CANGGIH SYSTEM SHEET)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //  FACE ID HUD MODAL
 
   Widget _buildAppleFaceIdModal({
     required String title,
@@ -933,15 +1001,15 @@ class _ScannerScreenState extends State<ScannerScreen>
                 borderRadius: BorderRadius.circular(34),
                 border: Border.all(
                   color: isSuccess
-                      ? const Color(0xFF34D399).withOpacity(0.50)
+                      ? const Color(0xFF30D158).withOpacity(0.50)
                       : Colors.white.withOpacity(0.18),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: (isSuccess
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFF0A84FF))
+                            ? const Color(0xFF34C759)
+                            : const Color(0xFF007AFF))
                         .withOpacity(0.35),
                     blurRadius: 36,
                     offset: const Offset(0, 10),
@@ -993,8 +1061,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: isSuccess
-                          ? const Color(0xFFA7F3D0)
-                          : const Color(0xFF94A3B8),
+                          ? const Color(0xFFCDEFD8)
+                          : const Color(0xFFAEAEB2),
                     ),
                   ),
 
@@ -1006,7 +1074,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
                         valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xFF0A84FF)),
+                            AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
                       ),
                     ),
                   ],
@@ -1034,29 +1102,29 @@ class _ScannerScreenState extends State<ScannerScreen>
 
     String modalTitle = 'Wajah Tidak Cocok';
     IconData modalIcon = Icons.close_rounded;
-    Color modalAccent = const Color(0xFFF87171);
-    Color modalBgGlow = const Color(0xFFEF4444);
+    Color modalAccent = const Color(0xFFFF6961);
+    Color modalBgGlow = const Color(0xFFFF3B30);
 
     if (isDark) {
       modalTitle = 'Pencahayaan Kurang';
       modalIcon = Icons.nightlight_round;
-      modalAccent = const Color(0xFFFBBF24);
-      modalBgGlow = const Color(0xFFF59E0B);
+      modalAccent = const Color(0xFFFFCC00);
+      modalBgGlow = const Color(0xFFFF9500);
     } else if (isOverexposed) {
       modalTitle = 'Pencahayaan Terlalu Silau';
       modalIcon = Icons.wb_sunny_rounded;
-      modalAccent = const Color(0xFFFBBF24);
-      modalBgGlow = const Color(0xFFF59E0B);
+      modalAccent = const Color(0xFFFFCC00);
+      modalBgGlow = const Color(0xFFFF9500);
     } else if (isPartial) {
       modalTitle = 'Wajah Tidak Utuh';
       modalIcon = Icons.face_retouching_off_rounded;
-      modalAccent = const Color(0xFFFB923C);
-      modalBgGlow = const Color(0xFFEA580C);
+      modalAccent = const Color(0xFFFF9500);
+      modalBgGlow = const Color(0xFFFF9500);
     } else if (isNoFace) {
       modalTitle = 'Wajah Tidak Terdeteksi';
       modalIcon = Icons.person_search_rounded;
-      modalAccent = const Color(0xFFF87171);
-      modalBgGlow = const Color(0xFFEF4444);
+      modalAccent = const Color(0xFFFF6961);
+      modalBgGlow = const Color(0xFFFF3B30);
     }
 
     return Container(
@@ -1126,7 +1194,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     height: 1.4,
-                    color: const Color(0xFFFECDD3),
+                    color: const Color(0xFFFFEBEB),
                   ),
                 ),
 
@@ -1164,9 +1232,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  APPLE FACE ID 3D RADIAL TICK DIAL PAINTER (60 SENSORY RAYS)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class _AppleFaceIdRadialTickPainter extends CustomPainter {
   final double progress; // 0.0 to 1.0
@@ -1217,7 +1283,7 @@ class _AppleFaceIdRadialTickPainter extends CustomPainter {
         // Gradient from Apple Blue to Apple Emerald
         final t = i / totalTicks;
         final tickColor = Color.lerp(
-          const Color(0xFF0A84FF),
+          const Color(0xFF007AFF),
           const Color(0xFF30D158),
           t,
         )!;
@@ -1246,9 +1312,7 @@ class _AppleFaceIdRadialTickPainter extends CustomPainter {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  TRUEDEPTH HOLOGRAPHIC BIOMETRIC DEPTH MESH PAINTER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class _BiometricMeshPainter extends CustomPainter {
   final double beamProgress; // 0.0 to 1.0 (moving up/down)
@@ -1275,8 +1339,8 @@ class _BiometricMeshPainter extends CustomPainter {
         colors: [
           Colors.transparent,
           isAligned
-              ? const Color(0xFF34D399).withOpacity(0.70)
-              : const Color(0xFF38BDF8).withOpacity(0.55),
+              ? const Color(0xFF30D158).withOpacity(0.70)
+              : const Color(0xFF5AC8FA).withOpacity(0.55),
           Colors.transparent,
         ],
       ).createShader(beamRect)
@@ -1289,7 +1353,7 @@ class _BiometricMeshPainter extends CustomPainter {
 
     // 2. Subtle TrueDepth Facial Landmark Feature Points
     if (isAligned) {
-      final pointColor = const Color(0xFF34D399).withOpacity(0.65);
+      final pointColor = const Color(0xFF30D158).withOpacity(0.65);
       final dotPaint = Paint()..color = pointColor;
 
       // Symmetric facial feature points (forehead, eyes, nose, cheeks, mouth, chin)
@@ -1319,9 +1383,7 @@ class _BiometricMeshPainter extends CustomPainter {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  OFFICIAL APPLE FACE ID VECTOR GLYPH PAINTER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class _AppleFaceIdGlyphPainter extends CustomPainter {
   final bool isProcessing;
@@ -1339,7 +1401,7 @@ class _AppleFaceIdGlyphPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    final bracketColor = isSuccess ? const Color(0xFF34D399) : Colors.white;
+    final bracketColor = isSuccess ? const Color(0xFF30D158) : Colors.white;
     final bracketPaint = Paint()
       ..color = bracketColor
       ..style = PaintingStyle.stroke
@@ -1349,7 +1411,7 @@ class _AppleFaceIdGlyphPainter extends CustomPainter {
     const double cornerLen = 16.0;
     const double radius = 8.0;
 
-    // ── 1. Apple Face ID 4 Corner Brackets ──
+    //  1. Apple Face ID 4 Corner Brackets
     // Top-Left
     final tlPath = Path()
       ..moveTo(0, cornerLen)
@@ -1382,11 +1444,11 @@ class _AppleFaceIdGlyphPainter extends CustomPainter {
       ..lineTo(w, h - cornerLen);
     canvas.drawPath(brPath, bracketPaint);
 
-    // ── 2. Interior: Face Glyph OR Apple Checkmark ──
+    //  2. Interior: Face Glyph OR Apple Checkmark
     if (isSuccess) {
       // Bold Apple Emerald Checkmark
       final checkPaint = Paint()
-        ..color = const Color(0xFF34D399)
+        ..color = const Color(0xFF30D158)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4.4
         ..strokeCap = StrokeCap.round
@@ -1442,7 +1504,7 @@ class _AppleFaceIdGlyphPainter extends CustomPainter {
           ..shader = LinearGradient(
             colors: [
               Colors.transparent,
-              const Color(0xFF0A84FF).withOpacity(0.80),
+              const Color(0xFF007AFF).withOpacity(0.80),
               Colors.transparent,
             ],
           ).createShader(Rect.fromLTWH(0, beamY - 1, w, 2));

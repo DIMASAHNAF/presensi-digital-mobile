@@ -4,10 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/theme/app_theme.dart';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  REKAP KEHADIRAN DIALOG — Kartu Presensi Bulanan Siswa
 //  Statistik Kehadiran, On-Time Rate & WhatsApp Gateway Log
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class RekapKehadiranDialog extends StatelessWidget {
   final DashboardFullModel data;
@@ -28,9 +26,9 @@ class RekapKehadiranDialog extends StatelessWidget {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF2F2F7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration:  BoxDecoration(
+        color: AppColors.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -39,7 +37,7 @@ class RekapKehadiranDialog extends StatelessWidget {
             width: 36,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1D1D6),
+              color:  AppColors.textQuaternary,
               borderRadius: BorderRadius.circular(2.5),
             ),
           ),
@@ -63,11 +61,11 @@ class RekapKehadiranDialog extends StatelessWidget {
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration:  BoxDecoration(
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(CupertinoIcons.xmark, size: 16, color: Color(0xFF8E8E93)),
+                    child:  Icon(CupertinoIcons.xmark, size: 16, color: AppColors.textMuted),
                   ),
                 ),
               ],
@@ -87,9 +85,9 @@ class RekapKehadiranDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE5E5EA)),
+                      border: Border.all(color:  AppColors.border),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.04),
@@ -119,7 +117,7 @@ class RekapKehadiranDialog extends StatelessWidget {
                                   'NISN: ${user.nisn} • ${user.kelas}',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: const Color(0xFF8E8E93),
+                                    color:  AppColors.textMuted,
                                   ),
                                 ),
                               ],
@@ -127,7 +125,7 @@ class RekapKehadiranDialog extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8F8ED),
+                                color:  AppColors.successBg,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -135,7 +133,7 @@ class RekapKehadiranDialog extends StatelessWidget {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF15803D),
+                                  color:  AppColors.success,
                                 ),
                               ),
                             ),
@@ -143,21 +141,21 @@ class RekapKehadiranDialog extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 18),
-                        const Divider(height: 1, color: Color(0xFFE5E5EA)),
+                         Divider(height: 1, color: AppColors.border),
                         const SizedBox(height: 18),
 
                         // Stats Grid 2x2
                         Row(
                           children: [
-                            Expanded(child: _buildMetricTile('Hadir', '${stats.hadir}', const Color(0xFF34C759))),
-                            Expanded(child: _buildMetricTile('Izin', '${stats.izin}', const Color(0xFFFF9500))),
+                            Expanded(child: _buildMetricTile('Hadir', '${stats.hadir}',  AppColors.success)),
+                            Expanded(child: _buildMetricTile('Izin', '${stats.izin}',  AppColors.warning)),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            Expanded(child: _buildMetricTile('Sakit', '${stats.sakit}', const Color(0xFF5856D6))),
-                            Expanded(child: _buildMetricTile('Alpa', '${stats.alpa}', const Color(0xFFFF3B30))),
+                            Expanded(child: _buildMetricTile('Sakit', '${stats.sakit}',  AppColors.primaryIndigo)),
+                            Expanded(child: _buildMetricTile('Alpa', '${stats.alpa}',  AppColors.danger)),
                           ],
                         ),
                       ],
@@ -170,19 +168,19 @@ class RekapKehadiranDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE5E5EA)),
+                      border: Border.all(color:  AppColors.border),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE8F8ED),
+                          decoration:  BoxDecoration(
+                            color: AppColors.successBg,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(CupertinoIcons.phone_fill, color: Color(0xFF25D366), size: 20),
+                          child:  Icon(CupertinoIcons.phone_fill, color: AppColors.waGreen, size: 20),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -204,7 +202,7 @@ class RekapKehadiranDialog extends StatelessWidget {
                                     : 'Nomor WhatsApp belum diatur di Profil',
                                 style: GoogleFonts.inter(
                                   fontSize: 11.5,
-                                  color: const Color(0xFF6C6C70),
+                                  color:  AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -220,9 +218,9 @@ class RekapKehadiranDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE5E5EA)),
+                      border: Border.all(color:  AppColors.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +230,7 @@ class RekapKehadiranDialog extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF8E8E93),
+                            color:  AppColors.textMuted,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -272,7 +270,7 @@ class RekapKehadiranDialog extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF3C3C43),
+              color:  AppColors.textSecondary,
             ),
           ),
           Text(
@@ -294,8 +292,8 @@ class RekapKehadiranDialog extends StatelessWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: const BoxDecoration(
-            color: Color(0xFF007AFF),
+          decoration:  BoxDecoration(
+            color: AppColors.primaryBlue,
             shape: BoxShape.circle,
           ),
         ),
@@ -305,7 +303,7 @@ class RekapKehadiranDialog extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0F172A),
+            color:  AppColors.primaryDark,
           ),
         ),
         Expanded(
@@ -313,7 +311,7 @@ class RekapKehadiranDialog extends StatelessWidget {
             desc,
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: const Color(0xFF64748B),
+              color:  AppColors.textMuted,
             ),
           ),
         ),

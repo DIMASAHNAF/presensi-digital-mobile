@@ -10,12 +10,13 @@ import '../../../../core/services/location_service.dart';
 import '../dialogs/classmate_detail_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
 import '../widgets/jadwal_pelajaran_widget.dart';
+import '../../../core/services/notification_service.dart';
+import '../dialogs/notification_sheet.dart';
+import '../../../core/theme/app_theme.dart';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BERANDA TAB — World-Class Mobile UX (Inspired by Wanderly Reference)
-//  Immersive Scenery Hero • Floating Action Hub • 4 Circular Service Badges
-//  Card Carousel with Star Status • Zero AI-Slop • Pure Craft
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BERANDA TAB
+//  Hero, action hub, and service badges
+//  Card carousel with status badges
 
 class BerandaTab extends StatefulWidget {
   final DashboardFullModel data;
@@ -139,8 +140,6 @@ class _BerandaTabState extends State<BerandaTab>
     return 'SW';
   }
 
-
-
   static String _toTitleCase(String text) {
     if (text.isEmpty) return text;
     return text.split(' ').map((word) {
@@ -164,27 +163,27 @@ class _BerandaTabState extends State<BerandaTab>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. COMPACT GREETING HEADER (Gaya Bank Jago) ──
+          //  1. COMPACT GREETING HEADER
           _buildCompactGreetingHeader(user)
               .animate()
               .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 14),
 
-          // ── 2. KARTU UTAMA PRESENSI & WIDGET PETA (Gaya Mekari Talenta) ──
-          _buildPresensiMekariCard(user, sesi, hasSesi, sudahHadir)
+          //  2. KARTU UTAMA PRESENSI & WIDGET PETA
+          _buildPresensiCard(user, sesi, hasSesi, sudahHadir)
               .animate()
               .fadeIn(duration: 400.ms, delay: 50.ms, curve: Curves.easeOutCubic)
               .slideY(begin: 0.04, end: 0, duration: 400.ms, delay: 50.ms, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 14),
 
-          // ── 3. 4-COLUMN QUICK ACTION BAR ──
+          //  3. 4-COLUMN QUICK ACTION BAR
           _buildQuickActionBar()
               .animate()
               .fadeIn(duration: 400.ms, delay: 100.ms, curve: Curves.easeOutCubic),
 
-          // ── 4. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW) ──
+          //  4. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW)
           if (widget.data.temanSekelas.isNotEmpty) ...[
             const SizedBox(height: 14),
             _buildTemanSekelasStoryRow(user)
@@ -195,11 +194,12 @@ class _BerandaTabState extends State<BerandaTab>
 
           const SizedBox(height: 16),
 
-          // ── 5. JADWAL PELAJARAN HARI INI ──
+          //  5. JADWAL PELAJARAN HARI INI
           JadwalPelajaranWidget(
             activeSession: sesi,
             namaKelas: user.kelas,
             sudahHadir: sudahHadir,
+            jadwal: widget.data.jadwal,
           )
               .animate()
               .fadeIn(duration: 400.ms, delay: 140.ms, curve: Curves.easeOutCubic)
@@ -209,9 +209,7 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  1. COMPACT GREETING HEADER (Gaya Bank Jago)
-  // ═══════════════════════════════════════════════════════════
+  //  1. COMPACT GREETING HEADER
 
   Widget _buildCompactGreetingHeader(UserModel user) {
     final avatarUrl = _formatAvatarUrl(user.avatar);
@@ -220,12 +218,12 @@ class _BerandaTabState extends State<BerandaTab>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.03),
+            color:  AppColors.shadow.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -244,8 +242,8 @@ class _BerandaTabState extends State<BerandaTab>
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFF1F5F9),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color:  AppColors.background,
+                  border: Border.all(color:  AppColors.border),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(100),
@@ -260,7 +258,7 @@ class _BerandaTabState extends State<BerandaTab>
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF2563EB),
+                                color:  AppColors.primaryBlue,
                               ),
                             ),
                           ),
@@ -271,7 +269,7 @@ class _BerandaTabState extends State<BerandaTab>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF2563EB),
+                              color:  AppColors.primaryBlue,
                             ),
                           ),
                         ),
@@ -285,8 +283,8 @@ class _BerandaTabState extends State<BerandaTab>
                   height: 12,
                   decoration: BoxDecoration(
                     color: user.isFaceEnrolled
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFFF59E0B),
+                        ?  AppColors.success
+                        :  AppColors.warning,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -308,11 +306,11 @@ class _BerandaTabState extends State<BerandaTab>
                   children: [
                     Flexible(
                       child: Text(
-                        'Halo, $namaClean 👋',
+                        'Halo, $namaClean ',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                          color:  AppColors.primaryDark,
                           letterSpacing: -0.2,
                         ),
                         maxLines: 1,
@@ -329,15 +327,15 @@ class _BerandaTabState extends State<BerandaTab>
                       style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF64748B),
+                        color:  AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(width: 5),
                     Container(
                       width: 4,
                       height: 4,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFCBD5E1),
+                      decoration:  BoxDecoration(
+                        color: AppColors.textQuaternary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -347,8 +345,8 @@ class _BerandaTabState extends State<BerandaTab>
                       height: 6,
                       decoration: BoxDecoration(
                         color: user.isFaceEnrolled
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFF59E0B),
+                            ?  AppColors.success
+                            :  AppColors.warning,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -359,8 +357,8 @@ class _BerandaTabState extends State<BerandaTab>
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: user.isFaceEnrolled
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFD97706),
+                            ?  AppColors.success
+                            :  AppColors.warning,
                       ),
                     ),
                   ],
@@ -375,30 +373,36 @@ class _BerandaTabState extends State<BerandaTab>
             height: 36,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color:  AppColors.background,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color:  AppColors.border),
             ),
             child: Image.asset(
               'assets/images/logo.webp',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
+              errorBuilder: (_, __, ___) =>  Icon(
                 Icons.school_rounded,
                 size: 20,
-                color: Color(0xFF2563EB),
+                color: AppColors.primaryBlue,
               ),
             ),
+          ),
+          const SizedBox(width: 8),
+          // C14. Tombol notifikasi (kotak masuk).
+          _NotificationBell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              NotificationSheet.show(context);
+            },
           ),
         ],
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  2. KARTU UTAMA PRESENSI & WIDGET PETA (Gaya Mekari Talenta)
-  // ═══════════════════════════════════════════════════════════
+  //  2. KARTU UTAMA PRESENSI & WIDGET PETA
 
-  Widget _buildPresensiMekariCard(
+  Widget _buildPresensiCard(
     UserModel user,
     SessionDetail? sesi,
     bool hasSesi,
@@ -414,12 +418,12 @@ class _BerandaTabState extends State<BerandaTab>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color:  AppColors.shadow.withOpacity(0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -442,16 +446,16 @@ class _BerandaTabState extends State<BerandaTab>
                     decoration: BoxDecoration(
                       color: hasSesi
                           ? (sudahHadir
-                              ? const Color(0xFFECFDF5)
-                              : const Color(0xFFEFF6FF))
-                          : const Color(0xFFF1F5F9),
+                              ?  AppColors.successBg
+                              :  AppColors.infoBg)
+                          :  AppColors.background,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: hasSesi
                             ? (sudahHadir
-                                ? const Color(0xFFA7F3D0)
-                                : const Color(0xFFBFDBFE))
-                            : const Color(0xFFE2E8F0),
+                                ?  AppColors.successBorder
+                                :  AppColors.infoBorder)
+                            :  AppColors.border,
                       ),
                     ),
                     child: Row(
@@ -463,9 +467,9 @@ class _BerandaTabState extends State<BerandaTab>
                           decoration: BoxDecoration(
                             color: hasSesi
                                 ? (sudahHadir
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF2563EB))
-                                : const Color(0xFF94A3B8),
+                                    ?  AppColors.success
+                                    :  AppColors.primaryBlue)
+                                :  AppColors.textMuted,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -481,9 +485,9 @@ class _BerandaTabState extends State<BerandaTab>
                             fontWeight: FontWeight.w700,
                             color: hasSesi
                                 ? (sudahHadir
-                                    ? const Color(0xFF047857)
-                                    : const Color(0xFF1D4ED8))
-                                : const Color(0xFF64748B),
+                                    ?  AppColors.success
+                                    :  AppColors.primaryBlue)
+                                :  AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -495,7 +499,7 @@ class _BerandaTabState extends State<BerandaTab>
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F172A),
+                      color:  AppColors.primaryDark,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -505,24 +509,16 @@ class _BerandaTabState extends State<BerandaTab>
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
+                      color:  AppColors.textMuted,
                     ),
                   ),
                 ],
               ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Icon(
-                  CupertinoIcons.hourglass,
-                  size: 16,
-                  color: Color(0xFF64748B),
-                ),
+              // C15. Jam WIB realtime + hitung mundur sesi.
+              _SessionClock(
+                nowLabel: widget.currentTimeWIB,
+                jamSelesai: sesi?.jamSelesai,
+                hasSesi: hasSesi,
               ),
             ],
           ),
@@ -534,30 +530,48 @@ class _BerandaTabState extends State<BerandaTab>
 
           const SizedBox(height: 14),
 
-          // Tombol Aksi Utama Presensi (Gaya Mekari Talenta)
+          // Tombol Aksi Utama Presensi
           if (!hasSesi) ...[
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 13),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color:  AppColors.background,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color:  AppColors.border),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  const Icon(
-                    CupertinoIcons.hourglass,
-                    size: 16,
-                    color: Color(0xFF64748B),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color:  AppColors.infoBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color:  AppColors.infoBorder),
+                    ),
+                    child:  Icon(
+                      CupertinoIcons.time,
+                      size: 26,
+                      color: AppColors.primaryBlue,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 12),
                   Text(
-                    'Menunggu Sesi Presensi Dibuka',
+                    'Belum Ada Sesi Aktif',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF64748B),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color:  AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Menunggu guru pengampu membuka sesi presensi kelas hari ini.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      height: 1.4,
+                      color:  AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -567,25 +581,25 @@ class _BerandaTabState extends State<BerandaTab>
             Container(
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
+                color:  AppColors.successBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
+                border: Border.all(color:  AppColors.successBorder),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                   Icon(
                     CupertinoIcons.checkmark_seal_fill,
                     size: 18,
-                    color: Color(0xFF059669),
+                    color: AppColors.success,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Sudah Presensi Hari Ini ✓',
+                    'Sudah Presensi Hari Ini ',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF047857),
+                      color:  AppColors.success,
                     ),
                   ),
                 ],
@@ -595,9 +609,9 @@ class _BerandaTabState extends State<BerandaTab>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
+                color:  AppColors.warningBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                border: Border.all(color:  AppColors.warningBorder),
               ),
               child: Row(
                 children: [
@@ -605,12 +619,12 @@ class _BerandaTabState extends State<BerandaTab>
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color:  AppColors.warningBorder,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       CupertinoIcons.exclamationmark_triangle_fill,
-                      color: Color(0xFFD97706),
+                      color: AppColors.warning,
                       size: 16,
                     ),
                   ),
@@ -624,7 +638,7 @@ class _BerandaTabState extends State<BerandaTab>
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF78350F),
+                            color:  AppColors.amberDeep,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -633,7 +647,7 @@ class _BerandaTabState extends State<BerandaTab>
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF92400E),
+                            color:  AppColors.amberDeep,
                             height: 1.3,
                           ),
                         ),
@@ -650,11 +664,11 @@ class _BerandaTabState extends State<BerandaTab>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD97706),
+                  color:  AppColors.warning,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFD97706).withOpacity(0.3),
+                      color:  AppColors.warning.withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -689,11 +703,11 @@ class _BerandaTabState extends State<BerandaTab>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color:  AppColors.primaryBlue,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2563EB).withOpacity(0.3),
+                      color:  AppColors.primaryBlue.withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -727,9 +741,7 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  2B. WIDGET PETA DENGAN ANIMASI PULSING RADAR (Gaya Mekari Talenta)
-  // ═══════════════════════════════════════════════════════════
+  //  2B. WIDGET PETA DENGAN ANIMASI PULSING RADAR
 
   Widget _buildMapWidget() {
     return ClipRRect(
@@ -782,9 +794,9 @@ class _BerandaTabState extends State<BerandaTab>
                                 height: 44,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: const Color(0xFF2563EB).withOpacity(opacity1 * 0.35),
+                                  color:  AppColors.primaryBlue.withOpacity(opacity1 * 0.35),
                                   border: Border.all(
-                                    color: const Color(0xFF3B82F6).withOpacity(opacity1),
+                                    color:  AppColors.primaryBlue.withOpacity(opacity1),
                                     width: 1.5,
                                   ),
                                 ),
@@ -797,9 +809,9 @@ class _BerandaTabState extends State<BerandaTab>
                                 height: 44,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: const Color(0xFF2563EB).withOpacity(opacity2 * 0.35),
+                                  color:  AppColors.primaryBlue.withOpacity(opacity2 * 0.35),
                                   border: Border.all(
-                                    color: const Color(0xFF3B82F6).withOpacity(opacity2),
+                                    color:  AppColors.primaryBlue.withOpacity(opacity2),
                                     width: 1.5,
                                   ),
                                 ),
@@ -852,8 +864,8 @@ class _BerandaTabState extends State<BerandaTab>
                                 width: 34,
                                 height: 34,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                  gradient:  LinearGradient(
+                                    colors: [AppColors.primaryBlue,  AppColors.primaryBlue],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   ),
@@ -861,7 +873,7 @@ class _BerandaTabState extends State<BerandaTab>
                                   border: Border.all(color: Colors.white, width: 2.5),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF1D4ED8).withOpacity(0.55),
+                                      color:  AppColors.primaryBlue.withOpacity(0.55),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -914,10 +926,10 @@ class _BerandaTabState extends State<BerandaTab>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       CupertinoIcons.shield_fill,
                       size: 12,
-                      color: Color(0xFF34D399),
+                      color: AppColors.success,
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -948,7 +960,7 @@ class _BerandaTabState extends State<BerandaTab>
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -957,10 +969,10 @@ class _BerandaTabState extends State<BerandaTab>
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       CupertinoIcons.location_fill,
                       size: 16,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                 ),
@@ -978,9 +990,9 @@ class _BerandaTabState extends State<BerandaTab>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
+          border: Border.all(color:  AppColors.infoBorder),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -991,12 +1003,12 @@ class _BerandaTabState extends State<BerandaTab>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+             SizedBox(
               width: 10,
               height: 10,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                color: Color(0xFF2563EB),
+                color: AppColors.primaryBlue,
               ),
             ),
             const SizedBox(width: 5),
@@ -1005,7 +1017,7 @@ class _BerandaTabState extends State<BerandaTab>
               style: GoogleFonts.inter(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF2563EB),
+                color:  AppColors.primaryBlue,
               ),
             ),
           ],
@@ -1017,9 +1029,9 @@ class _BerandaTabState extends State<BerandaTab>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: const Color(0xFFFECDD3)),
+          border: Border.all(color:  AppColors.dangerBg),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -1030,10 +1042,10 @@ class _BerandaTabState extends State<BerandaTab>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+             Icon(
               CupertinoIcons.clear_circled_solid,
               size: 11,
-              color: Color(0xFFE11D48),
+              color: AppColors.danger,
             ),
             const SizedBox(width: 5),
             Text(
@@ -1041,7 +1053,7 @@ class _BerandaTabState extends State<BerandaTab>
               style: GoogleFonts.inter(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFE11D48),
+                color:  AppColors.danger,
               ),
             ),
           ],
@@ -1053,9 +1065,9 @@ class _BerandaTabState extends State<BerandaTab>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color:  AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -1066,10 +1078,10 @@ class _BerandaTabState extends State<BerandaTab>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+             Icon(
               CupertinoIcons.location,
               size: 11,
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted,
             ),
             const SizedBox(width: 5),
             Text(
@@ -1077,7 +1089,7 @@ class _BerandaTabState extends State<BerandaTab>
               style: GoogleFonts.inter(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
+                color:  AppColors.textMuted,
               ),
             ),
           ],
@@ -1089,9 +1101,9 @@ class _BerandaTabState extends State<BerandaTab>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
+          color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: const Color(0xFF86EFAC)),
+          border: Border.all(color:  AppColors.successBorder),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -1102,10 +1114,10 @@ class _BerandaTabState extends State<BerandaTab>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+             Icon(
               CupertinoIcons.checkmark_alt_circle_fill,
               size: 11,
-              color: Color(0xFF16A34A),
+              color: AppColors.success,
             ),
             const SizedBox(width: 5),
             Text(
@@ -1113,7 +1125,7 @@ class _BerandaTabState extends State<BerandaTab>
               style: GoogleFonts.inter(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF16A34A),
+                color:  AppColors.success,
               ),
             ),
           ],
@@ -1124,9 +1136,9 @@ class _BerandaTabState extends State<BerandaTab>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: AppColors.surface.withOpacity(0.95),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(color:  AppColors.warningBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -1137,10 +1149,10 @@ class _BerandaTabState extends State<BerandaTab>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+           Icon(
             CupertinoIcons.location_solid,
             size: 11,
-            color: Color(0xFFD97706),
+            color: AppColors.warning,
           ),
           const SizedBox(width: 5),
           Text(
@@ -1148,7 +1160,7 @@ class _BerandaTabState extends State<BerandaTab>
             style: GoogleFonts.inter(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFFD97706),
+              color:  AppColors.warning,
             ),
           ),
         ],
@@ -1156,20 +1168,18 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  3. 4-COLUMN QUICK ACTION BAR (Sesuai Desain Asli)
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildQuickActionBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color:  AppColors.shadow.withOpacity(0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -1181,22 +1191,22 @@ class _BerandaTabState extends State<BerandaTab>
           _buildQuickActionItem(
             icon: CupertinoIcons.calendar_today,
             label: 'Kehadiran',
-            bgColor: const Color(0xFFEFF6FF), // soft blue-50
-            iconColor: const Color(0xFF2563EB), // blue-600
+            bgColor:  AppColors.infoBg, // soft blue-50
+            iconColor:  AppColors.primaryBlue, // blue-600
             onTap: widget.onOpenKehadiran,
           ),
           _buildQuickActionItem(
             icon: CupertinoIcons.person_2_fill,
             label: 'Teman',
-            bgColor: const Color(0xFFEEF2FF), // soft indigo-50
-            iconColor: const Color(0xFF4F46E5), // indigo-600
+            bgColor:  AppColors.indigoBg, // soft indigo-50
+            iconColor:  AppColors.primaryIndigo, // indigo-600
             onTap: widget.onOpenTeman,
           ),
           _buildQuickActionItem(
             icon: CupertinoIcons.location_solid,
             label: 'Cek Lokasi',
-            bgColor: const Color(0xFFECFDF5), // soft emerald-50
-            iconColor: const Color(0xFF059669), // emerald-600
+            bgColor:  AppColors.successBg, // soft emerald-50
+            iconColor:  AppColors.success, // emerald-600
             onTap: () {
               if (widget.onRefreshLocation != null) {
                 widget.onRefreshLocation!();
@@ -1206,8 +1216,8 @@ class _BerandaTabState extends State<BerandaTab>
           _buildQuickActionItem(
             icon: CupertinoIcons.book_fill,
             label: 'Panduan',
-            bgColor: const Color(0xFFFFFBEB), // soft amber-50
-            iconColor: const Color(0xFFD97706), // amber-600
+            bgColor:  AppColors.warningBg, // soft amber-50
+            iconColor:  AppColors.warning, // amber-600
             onTap: () {
               if (widget.onOpenPanduan != null) {
                 widget.onOpenPanduan!();
@@ -1250,7 +1260,7 @@ class _BerandaTabState extends State<BerandaTab>
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF475569),
+              color:  AppColors.textSecondary,
             ),
           ),
         ],
@@ -1258,9 +1268,7 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  4. TEMAN SEKELAS HARI INI (HORIZONTAL STORY ROW)
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildTemanSekelasStoryRow(UserModel user) {
     final list = widget.data.temanSekelas;
@@ -1268,9 +1276,9 @@ class _BerandaTabState extends State<BerandaTab>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color:  AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -1295,13 +1303,13 @@ class _BerandaTabState extends State<BerandaTab>
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color:  AppColors.infoBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child:  Icon(
                         CupertinoIcons.person_2_fill,
                         size: 14,
-                        color: Color(0xFF2563EB),
+                        color: AppColors.primaryBlue,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1311,7 +1319,7 @@ class _BerandaTabState extends State<BerandaTab>
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                          color:  AppColors.primaryDark,
                         ),
                         children: [
                           TextSpan(
@@ -1319,7 +1327,7 @@ class _BerandaTabState extends State<BerandaTab>
                             style: GoogleFonts.jetBrainsMono(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: const Color(0xFF94A3B8),
+                              color:  AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -1340,14 +1348,14 @@ class _BerandaTabState extends State<BerandaTab>
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2563EB),
+                          color:  AppColors.primaryBlue,
                         ),
                       ),
                       const SizedBox(width: 2),
-                      const Icon(
+                       Icon(
                         CupertinoIcons.chevron_right,
                         size: 11,
-                        color: Color(0xFF2563EB),
+                        color: AppColors.primaryBlue,
                       ),
                     ],
                   ),
@@ -1382,16 +1390,16 @@ class _BerandaTabState extends State<BerandaTab>
                             height: 54,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFEFF6FF),
+                              color:  AppColors.infoBg,
                               border: Border.all(
-                                color: const Color(0xFF60A5FA),
+                                color:  AppColors.primaryBlue,
                                 width: 1.5,
                               ),
                             ),
-                            child: const Center(
+                            child:  Center(
                               child: Icon(
                                 CupertinoIcons.add,
-                                color: Color(0xFF2563EB),
+                                color: AppColors.primaryBlue,
                                 size: 20,
                               ),
                             ),
@@ -1405,7 +1413,7 @@ class _BerandaTabState extends State<BerandaTab>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2563EB),
+                              color:  AppColors.primaryBlue,
                             ),
                           ),
                         ],
@@ -1424,17 +1432,17 @@ class _BerandaTabState extends State<BerandaTab>
                 Color ringColor;
                 Color dotColor;
                 if (isHadir) {
-                  ringColor = const Color(0xFF10B981);
-                  dotColor = const Color(0xFF10B981);
+                  ringColor =  AppColors.success;
+                  dotColor =  AppColors.success;
                 } else if (isIzin) {
-                  ringColor = const Color(0xFFF59E0B);
-                  dotColor = const Color(0xFFF59E0B);
+                  ringColor =  AppColors.warning;
+                  dotColor =  AppColors.warning;
                 } else if (isSakit) {
-                  ringColor = const Color(0xFF0EA5E9);
-                  dotColor = const Color(0xFF0EA5E9);
+                  ringColor =  AppColors.info;
+                  dotColor =  AppColors.info;
                 } else {
-                  ringColor = const Color(0xFFCBD5E1);
-                  dotColor = const Color(0xFF94A3B8);
+                  ringColor =  AppColors.textQuaternary;
+                  dotColor =  AppColors.textMuted;
                 }
 
                 return GestureDetector(
@@ -1502,7 +1510,7 @@ class _BerandaTabState extends State<BerandaTab>
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
+                            color:  AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -1520,14 +1528,14 @@ class _BerandaTabState extends State<BerandaTab>
   Widget _buildFriendFallback(String name) {
     final initials = _getInitials(name);
     return Container(
-      color: const Color(0xFFEFF6FF),
+      color:  AppColors.infoBg,
       alignment: Alignment.center,
       child: Text(
         initials,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           fontWeight: FontWeight.w800,
-          color: const Color(0xFF2563EB),
+          color:  AppColors.primaryBlue,
         ),
       ),
     );
@@ -1538,7 +1546,7 @@ class _PinArrowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF1D4ED8)
+      ..color =  AppColors.primaryBlue
       ..style = PaintingStyle.fill;
 
     final path = Path()
@@ -1552,4 +1560,148 @@ class _PinArrowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+
+/// C14. Lonceng notifikasi dengan titik indikator.
+class _NotificationBell extends StatefulWidget {
+  final VoidCallback onTap;
+  const _NotificationBell({required this.onTap});
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell> {
+  int _unread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    final n = await NotificationService.unreadCount();
+    if (mounted) setState(() => _unread = n);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        widget.onTap();
+        await Future.delayed(const Duration(milliseconds: 2500));
+        _check();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child:  Icon(
+              CupertinoIcons.bell_fill,
+              size: 18,
+              color: AppColors.primaryBlue,
+            ),
+          ),
+          if (_unread > 0)
+            Positioned(
+              top: -3,
+              right: -3,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.danger,
+                  borderRadius: const BorderRadius.all(Radius.circular(9)),
+                ),
+                child: Text(
+                  _unread > 9 ? '9+' : '$_unread',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// C15. Jam WIB realtime + hitung mundur ke penutupan sesi.
+class _SessionClock extends StatelessWidget {
+  final String nowLabel;
+  final String? jamSelesai;
+  final bool hasSesi;
+
+  const _SessionClock({
+    required this.nowLabel,
+    this.jamSelesai,
+    required this.hasSesi,
+  });
+
+  /// Menit tersisa sampai jam selesai (HH:mm). Null bila tak valid / sudah lewat.
+  int? _minutesLeft() {
+    final js = jamSelesai;
+    if (js == null || js.isEmpty) return null;
+    final parts = js.split(':');
+    if (parts.length < 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    final now = DateTime.now().toUtc().add(const Duration(hours: 7)); // WIB
+    final end = DateTime(now.year, now.month, now.day, h, m);
+    final diff = end.difference(now).inMinutes;
+    return diff >= 0 ? diff : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final left = hasSesi ? _minutesLeft() : null;
+    final closingSoon = left != null && left <= 10;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          nowLabel.isEmpty ? '--:--:--' : nowLabel,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        if (left != null) ...[
+          const SizedBox(height: 3),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: closingSoon ? AppColors.dangerBg : AppColors.warningBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              left <= 0 ? 'Sesi ditutup' : 'Tutup dalam $left mnt',
+              style: GoogleFonts.inter(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: closingSoon ? AppColors.danger : AppColors.warning,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }

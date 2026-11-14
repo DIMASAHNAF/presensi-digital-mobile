@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/models/dashboard_full_model.dart';
+import '../../../core/theme/app_theme.dart';
 
 class KehadiranTab extends StatefulWidget {
   final DashboardFullModel data;
@@ -71,16 +75,16 @@ class _KehadiranTabState extends State<KehadiranTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. APPLE HEALTH STAT CARD ──
+          //  1. APPLE HEALTH STAT CARD
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              border: Border.all(color:  AppColors.border, width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0F172A).withOpacity(0.04),
+                  color:  AppColors.shadow.withOpacity(0.04),
                   blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
@@ -96,7 +100,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                       style: GoogleFonts.inter(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF64748B),
+                        color:  AppColors.textMuted,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -105,7 +109,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2563EB),
+                        color:  AppColors.primaryBlue,
                       ),
                     ),
                   ],
@@ -119,8 +123,8 @@ class _KehadiranTabState extends State<KehadiranTab> {
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
                         color: stats.persentase >= 75
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ?  AppColors.success
+                            :  AppColors.danger,
                         letterSpacing: -1,
                       ),
                     ),
@@ -130,7 +134,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                         'Rasio kehadiran terverifikasi untuk seluruh sesi belajar aktif semester ini.',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF64748B),
+                          color:  AppColors.textMuted,
                           height: 1.35,
                         ),
                       ),
@@ -139,7 +143,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Segmented Activity Bar (Proportional) ──
+                //  Segmented Activity Bar (Proportional)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(5),
                   child: SizedBox(
@@ -149,26 +153,26 @@ class _KehadiranTabState extends State<KehadiranTab> {
                         if (stats.hadir > 0)
                           Expanded(
                             flex: stats.hadir,
-                            child: Container(color: const Color(0xFF10B981)),
+                            child: Container(color:  AppColors.success),
                           ),
                         if (stats.izin > 0)
                           Expanded(
                             flex: stats.izin,
-                            child: Container(color: const Color(0xFFF59E0B)),
+                            child: Container(color:  AppColors.warning),
                           ),
                         if (stats.sakit > 0)
                           Expanded(
                             flex: stats.sakit,
-                            child: Container(color: const Color(0xFF6366F1)),
+                            child: Container(color:  AppColors.primaryIndigo),
                           ),
                         if (stats.alpa > 0)
                           Expanded(
                             flex: stats.alpa,
-                            child: Container(color: const Color(0xFFEF4444)),
+                            child: Container(color:  AppColors.danger),
                           ),
                         if (stats.total == 0)
                           Expanded(
-                            child: Container(color: const Color(0xFFE2E8F0)),
+                            child: Container(color:  AppColors.border),
                           ),
                       ],
                     ),
@@ -176,25 +180,25 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── 4 Crisp Metric Columns ──
+                //  4 Crisp Metric Columns
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildMetricColumn('Hadir', '${stats.hadir}', const Color(0xFF10B981)),
+                    _buildMetricColumn('Hadir', '${stats.hadir}',  AppColors.success),
                     _buildMetricDivider(),
-                    _buildMetricColumn('Izin', '${stats.izin}', const Color(0xFFF59E0B)),
+                    _buildMetricColumn('Izin', '${stats.izin}',  AppColors.warning),
                     _buildMetricDivider(),
-                    _buildMetricColumn('Sakit', '${stats.sakit}', const Color(0xFF6366F1)),
+                    _buildMetricColumn('Sakit', '${stats.sakit}',  AppColors.primaryIndigo),
                     _buildMetricDivider(),
-                    _buildMetricColumn('Alpa', '${stats.alpa}', const Color(0xFFEF4444)),
+                    _buildMetricColumn('Alpa', '${stats.alpa}',  AppColors.danger),
                   ],
                 ),
 
                 const SizedBox(height: 14),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                 Divider(height: 1, color: AppColors.background),
                 const SizedBox(height: 10),
 
-                // ── Lihat Rekap Lengkap Presensi Action ──
+                //  Lihat Rekap Lengkap Presensi Action
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
@@ -208,10 +212,10 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                         Icon(
                           CupertinoIcons.doc_text_search,
                           size: 15,
-                          color: Color(0xFF2563EB),
+                          color: AppColors.primaryBlue,
                         ),
                         const SizedBox(width: 7),
                         Text(
@@ -219,7 +223,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2563EB),
+                            color:  AppColors.primaryBlue,
                           ),
                         ),
                       ],
@@ -235,41 +239,41 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 16),
 
-          // ── 2. DAPODIK 75% SAFE-ZONE GAUGE (Academic Standing) ──
+          //  2. DAPODIK 75% SAFE-ZONE GAUGE (Academic Standing)
           _buildDapodikSafetyCard(stats)
               .animate()
               .fadeIn(duration: 400.ms, delay: 80.ms, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 16),
 
-          // ── 3. MONTHLY ATTENDANCE HEATMAP (Apple Health / GitHub Grid) ──
-          _buildMonthlyHeatmap(riwayatRaw)
+          //  3. MONTHLY ATTENDANCE HEATMAP (Apple Health / GitHub Grid)
+          _buildMonthlyHeatmap()
               .animate()
               .fadeIn(duration: 400.ms, delay: 120.ms, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 16),
 
-          // ── 4. SEARCH FIELD ──
+          //  4. SEARCH FIELD
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              border: Border.all(color:  AppColors.border, width: 1.0),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
-              style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.inter(fontSize: 13.5, color:  AppColors.primaryDark),
               decoration: InputDecoration(
                 hintText: 'Cari mata pelajaran, guru, atau tanggal...',
                 hintStyle: GoogleFonts.inter(
                   fontSize: 13,
-                  color: const Color(0xFF94A3B8),
+                  color:  AppColors.textMuted,
                 ),
-                prefixIcon: const Icon(
+                prefixIcon:  Icon(
                   CupertinoIcons.search,
                   size: 18,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted,
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? GestureDetector(
@@ -277,10 +281,10 @@ class _KehadiranTabState extends State<KehadiranTab> {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
                         },
-                        child: const Icon(
+                        child:  Icon(
                           CupertinoIcons.clear_thick_circled,
                           size: 16,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textMuted,
                         ),
                       )
                     : null,
@@ -295,7 +299,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 12),
 
-          // ── 5. FILTER CAPSULES ──
+          //  5. FILTER CAPSULES
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -316,7 +320,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 18),
 
-          // ── 6. RIWAYAT PRESENSI LIST ──
+          //  6. RIWAYAT PRESENSI LIST
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -325,7 +329,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 style: GoogleFonts.inter(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF64748B),
+                  color:  AppColors.textMuted,
                   letterSpacing: 0.8,
                 ),
               ),
@@ -334,7 +338,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF2563EB),
+                  color:  AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -352,13 +356,13 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color:  AppColors.background,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       CupertinoIcons.tray,
                       size: 26,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -366,7 +370,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     'Tidak ada catatan presensi',
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF64748B),
+                      color:  AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -387,32 +391,38 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 String statusLabel;
 
                 if (status == 'hadir') {
-                  badgeColor = const Color(0xFF10B981);
-                  badgeBg = const Color(0xFFECFDF5);
+                  badgeColor =  AppColors.success;
+                  badgeBg =  AppColors.successBg;
                   statusLabel = 'HADIR';
                 } else if (status == 'izin') {
-                  badgeColor = const Color(0xFFF59E0B);
-                  badgeBg = const Color(0xFFFFFBEB);
+                  badgeColor =  AppColors.warning;
+                  badgeBg =  AppColors.warningBg;
                   statusLabel = 'IZIN';
                 } else if (status == 'sakit') {
-                  badgeColor = const Color(0xFF6366F1);
-                  badgeBg = const Color(0xFFEEF2FF);
+                  badgeColor =  AppColors.primaryIndigo;
+                  badgeBg =  AppColors.indigoBg;
                   statusLabel = 'SAKIT';
                 } else {
-                  badgeColor = const Color(0xFFEF4444);
-                  badgeBg = const Color(0xFFFEF2F2);
+                  badgeColor =  AppColors.danger;
+                  badgeBg =  AppColors.dangerBg;
                   statusLabel = 'ALPA';
                 }
+
+                final photoRaw = (item['photo'] ?? '').toString();
+                final String? proofPhoto = photoRaw.isEmpty
+                    ? null
+                    : '${ApiConstants.storageBaseUrl}/${photoRaw.replaceFirst(RegExp(r'^/?(storage/)?'), '')}';
+                final proofDistance = (item['distance'] as num?)?.toDouble();
 
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                    border: Border.all(color:  AppColors.border, width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0F172A).withOpacity(0.02),
+                        color:  AppColors.shadow.withOpacity(0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -420,27 +430,59 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: badgeBg,
+                      if (proofPhoto != null)
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            status == 'hadir'
-                                ? Icons.check_circle_rounded
-                                : status == 'izin'
-                                    ? Icons.assignment_outlined
-                                    : status == 'sakit'
-                                        ? Icons.local_hospital_rounded
-                                        : Icons.cancel_outlined,
-                            size: 20,
-                            color: badgeColor,
+                          child: CachedNetworkImage(
+                            imageUrl: proofPhoto,
+                            width: 46,
+                            height: 46,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              width: 46,
+                              height: 46,
+                              color: badgeBg,
+                              child: const Center(
+                                child: CupertinoActivityIndicator(radius: 7),
+                              ),
+                            ),
+                            errorWidget: (_, __, ___) => Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: badgeBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                size: 20,
+                                color: badgeColor,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              status == 'hadir'
+                                  ? Icons.check_circle_rounded
+                                  : status == 'izin'
+                                      ? Icons.assignment_outlined
+                                      : status == 'sakit'
+                                          ? Icons.local_hospital_rounded
+                                          : Icons.cancel_outlined,
+                              size: 20,
+                              color: badgeColor,
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: () {
@@ -484,7 +526,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F172A),
+                                  color:  AppColors.primaryDark,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -496,7 +538,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF64748B),
+                                    color:  AppColors.textMuted,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -510,20 +552,20 @@ class _KehadiranTabState extends State<KehadiranTab> {
                                       timeStr,
                                       style: GoogleFonts.inter(
                                         fontSize: 11,
-                                        color: const Color(0xFF94A3B8),
+                                        color:  AppColors.textMuted,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   if (item['guru'] != null && (item['guru'] as String).isNotEmpty) ...[
-                                    const Text(' • ', style: TextStyle(fontSize: 11, color: Color(0xFFCBD5E1))),
+                                     Text(' • ', style: TextStyle(fontSize: 11, color: AppColors.textQuaternary)),
                                     Flexible(
                                       child: Text(
                                         'Guru: ${item['guru']}',
                                         style: GoogleFonts.inter(
                                           fontSize: 11,
-                                          color: const Color(0xFF94A3B8),
+                                          color:  AppColors.textMuted,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -532,6 +574,33 @@ class _KehadiranTabState extends State<KehadiranTab> {
                                   ],
                                 ],
                               ),
+                              if (isHadir && (proofDistance != null || proofPhoto != null)) ...[
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                     Icon(
+                                      CupertinoIcons.location_solid,
+                                      size: 11,
+                                      color: AppColors.success,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        proofDistance != null
+                                          ? 'Terverifikasi • ${proofDistance.toStringAsFixed(0)} m dari sekolah'
+                                          : 'Terverifikasi • GPS sekolah',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          color:  AppColors.success,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           );
                         }(),
@@ -562,9 +631,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  2. DAPODIK SAFETY GAUGE CARD
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildDapodikSafetyCard(StatsModel stats) {
     final isSafe = stats.persentase >= 75;
@@ -576,10 +643,10 @@ class _KehadiranTabState extends State<KehadiranTab> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isSafe ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+        color: isSafe ?  AppColors.successBg :  AppColors.dangerBg,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isSafe ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
+          color: isSafe ?  AppColors.successBorder :  AppColors.dangerBg,
           width: 1.0,
         ),
       ),
@@ -594,7 +661,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   Icon(
                     isSafe ? Icons.verified_user_rounded : Icons.warning_amber_rounded,
                     size: 18,
-                    color: isSafe ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                    color: isSafe ?  AppColors.success :  AppColors.danger,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -602,7 +669,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     style: GoogleFonts.inter(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
-                      color: isSafe ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                      color: isSafe ?  AppColors.success :  AppColors.danger,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -611,18 +678,18 @@ class _KehadiranTabState extends State<KehadiranTab> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isSafe ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                  color: isSafe ?  AppColors.successBg :  AppColors.dangerBg,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isSafe ? const Color(0xFF86EFAC) : const Color(0xFFFCA5A5),
+                    color: isSafe ?  AppColors.successBorder :  AppColors.dangerBorder,
                   ),
                 ),
                 child: Text(
-                  isSafe ? 'STATUS AMAN ✓' : 'BATAS RAWAN ⚠️',
+                  isSafe ? 'STATUS AMAN ' : 'BATAS RAWAN ',
                   style: GoogleFonts.inter(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
-                    color: isSafe ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                    color: isSafe ?  AppColors.success :  AppColors.danger,
                   ),
                 ),
               ),
@@ -635,7 +702,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                 : 'Perhatian: Kehadiranmu berada di bawah batas minimum 75% Dapodik. Segera penuhi kehadiran di sesi berikutnya agar memenuhi syarat ujian.',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: isSafe ? const Color(0xFF166534) : const Color(0xFF991B1B),
+              color: isSafe ?  AppColors.success :  AppColors.danger,
               height: 1.35,
             ),
           ),
@@ -643,10 +710,10 @@ class _KehadiranTabState extends State<KehadiranTab> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSafe ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
+                color: isSafe ?  AppColors.successBorder :  AppColors.dangerBg,
               ),
             ),
             child: Row(
@@ -657,7 +724,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   style: GoogleFonts.inter(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF475569),
+                    color:  AppColors.textSecondary,
                   ),
                 ),
                 Text(
@@ -665,7 +732,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: isSafe ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                    color: isSafe ?  AppColors.success :  AppColors.danger,
                   ),
                 ),
               ],
@@ -676,53 +743,48 @@ class _KehadiranTabState extends State<KehadiranTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  3. MONTHLY ATTENDANCE HEATMAP (Activity Calendar Matrix)
-  // ═══════════════════════════════════════════════════════════
+  Widget _buildMonthlyHeatmap() {
+    final calendar = widget.data.calendar;
 
-  Widget _buildMonthlyHeatmap(List<dynamic> riwayat) {
-    // Current date reference: November 2026
-    const daysInMonth = 30;
-    const currentDay = 8; // Today is Nov 8th
-
-    // Mapping presence days from riwayat
-    final Set<int> presentDays = {};
-    final Set<int> lateDays = {};
-    final Set<int> izinDays = {};
-
-    for (var r in riwayat) {
-      final tglStr = (r['tanggal'] ?? '').toString();
-      final dayMatch = RegExp(r'(\d{1,2})').firstMatch(tglStr);
-      if (dayMatch != null) {
-        final d = int.tryParse(dayMatch.group(1)!) ?? 0;
-        final status = (r['status'] ?? '').toString().toLowerCase();
-        if (d >= 1 && d <= 30) {
-          if (status == 'hadir') {
-            presentDays.add(d);
-          } else if (status == 'izin' || status == 'sakit') {
-            izinDays.add(d);
-          }
+    // Fallback: derive dari riwayat bila backend belum mengirim calendar.
+    final Map<int, String> dayStatus = {};
+    if (calendar != null) {
+      for (final d in calendar.days) {
+        if (d.status != null) dayStatus[d.day] = d.status!;
+      }
+    } else {
+      for (final r in widget.data.riwayat) {
+        final tglStr = (r['tanggal'] ?? '').toString();
+        final match = RegExp(r'(\d{1,2})').firstMatch(tglStr);
+        if (match == null) continue;
+        final d = int.tryParse(match.group(1)!) ?? 0;
+        final st = (r['status'] ?? '').toString().toLowerCase();
+        if (d < 1) continue;
+        if (st == 'hadir' || dayStatus[d] == null) {
+          dayStatus[d] = st;
         }
       }
     }
 
-    // Default mock sample days to make heatmap beautiful if data is sparse
-    if (presentDays.isEmpty) {
-      presentDays.addAll([2, 3, 4, 5, 6, 8]);
-      lateDays.add(4);
-    }
+    final now = DateTime.now();
+    final daysInMonth = calendar?.daysInMonth ?? now.day;
+    final currentDay = calendar?.todayDay ?? now.day;
+    final monthLabel = calendar != null
+        ? DateFormat('MMMM yyyy', 'id_ID')
+            .format(DateTime(calendar.year, calendar.month))
+        : DateFormat('MMMM yyyy', 'id_ID').format(now);
 
     final dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color:  AppColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.03),
+            color:  AppColors.shadow.withOpacity(0.03),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -739,13 +801,13 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color:  AppColors.infoBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       CupertinoIcons.calendar,
                       size: 15,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -754,18 +816,18 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     style: GoogleFonts.inter(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF64748B),
+                      color:  AppColors.textMuted,
                       letterSpacing: 0.6,
                     ),
                   ),
                 ],
               ),
               Text(
-                'November 2026',
+                monthLabel,
                 style: GoogleFonts.inter(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2563EB),
+                  color:  AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -785,7 +847,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF94A3B8),
+                    color:  AppColors.textMuted,
                   ),
                 ),
               );
@@ -794,42 +856,43 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 8),
 
-          // Calendar Grid (30 days)
+          // Calendar Grid
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: List.generate(daysInMonth, (index) {
               final dayNumber = index + 1;
               final isToday = dayNumber == currentDay;
-              final isPresent = presentDays.contains(dayNumber);
-              final isLate = lateDays.contains(dayNumber);
-              final isIzin = izinDays.contains(dayNumber);
+              final status = dayStatus[dayNumber];
               final isFuture = dayNumber > currentDay;
 
               Color cellBg;
               Color textColor;
               Border? cellBorder;
 
-              if (isPresent) {
-                cellBg = const Color(0xFF10B981);
+              if (status == 'hadir') {
+                cellBg =  AppColors.success;
                 textColor = Colors.white;
-              } else if (isIzin) {
-                cellBg = const Color(0xFFFBBF24);
+              } else if (status == 'izin') {
+                cellBg =  AppColors.warning;
                 textColor = Colors.white;
-              } else if (isLate) {
-                cellBg = const Color(0xFFF59E0B);
+              } else if (status == 'sakit') {
+                cellBg =  AppColors.info;
+                textColor = Colors.white;
+              } else if (status == 'alpa' || status == 'alpha') {
+                cellBg =  AppColors.danger;
                 textColor = Colors.white;
               } else if (isFuture) {
-                cellBg = const Color(0xFFF8FAFC);
-                textColor = const Color(0xFFCBD5E1);
-                cellBorder = Border.all(color: const Color(0xFFF1F5F9));
+                cellBg =  AppColors.background;
+                textColor =  AppColors.textQuaternary;
+                cellBorder = Border.all(color:  AppColors.background);
               } else {
-                cellBg = const Color(0xFFF1F5F9);
-                textColor = const Color(0xFF64748B);
+                cellBg =  AppColors.background;
+                textColor =  AppColors.textMuted;
               }
 
               if (isToday) {
-                cellBorder = Border.all(color: const Color(0xFF2563EB), width: 2.0);
+                cellBorder = Border.all(color:  AppColors.primaryBlue, width: 2.0);
               }
 
               return Container(
@@ -860,11 +923,11 @@ class _KehadiranTabState extends State<KehadiranTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildLegendDot(const Color(0xFF10B981), 'Hadir'),
-              _buildLegendDot(const Color(0xFFFBBF24), 'Izin'),
-              _buildLegendDot(const Color(0xFF0EA5E9), 'Sakit'),
-              _buildLegendDot(const Color(0xFFF43F5E), 'Alpa'),
-              _buildLegendDot(const Color(0xFF2563EB), 'Hari Ini'),
+              _buildLegendDot( AppColors.success, 'Hadir'),
+              _buildLegendDot( AppColors.warning, 'Izin'),
+              _buildLegendDot( AppColors.info, 'Sakit'),
+              _buildLegendDot( AppColors.danger, 'Alpa'),
+              _buildLegendDot( AppColors.primaryBlue, 'Hari Ini'),
             ],
           ),
         ],
@@ -887,16 +950,14 @@ class _KehadiranTabState extends State<KehadiranTab> {
           style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF64748B),
+            color:  AppColors.textMuted,
           ),
         ),
       ],
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
   //  METRIC HELPERS & FILTERS
-  // ═══════════════════════════════════════════════════════════
 
   Widget _buildMetricColumn(String label, String value, Color color) {
     return Column(
@@ -915,7 +976,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
           style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF64748B),
+            color:  AppColors.textMuted,
           ),
         ),
       ],
@@ -926,7 +987,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
     return Container(
       width: 1,
       height: 28,
-      color: const Color(0xFFE2E8F0),
+      color:  AppColors.border,
     );
   }
 
@@ -942,16 +1003,16 @@ class _KehadiranTabState extends State<KehadiranTab> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB) : Colors.white,
+          color: isSelected ?  AppColors.primaryBlue : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            color: isSelected ?  AppColors.primaryBlue :  AppColors.border,
             width: 1.0,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.25),
+                    color:  AppColors.primaryBlue.withOpacity(0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -963,7 +1024,7 @@ class _KehadiranTabState extends State<KehadiranTab> {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF475569),
+            color: isSelected ? Colors.white :  AppColors.textSecondary,
           ),
         ),
       ),

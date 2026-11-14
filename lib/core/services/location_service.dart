@@ -1,4 +1,7 @@
   import 'dart:math';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:geolocator/geolocator.dart';
 import '../models/session_model.dart';
 
@@ -21,6 +24,22 @@ class GeofenceResult {
 }
 
 class LocationService {
+  static const MethodChannel _mockChannel =
+      MethodChannel('id.sch.smknegeri1beringin.presensi/mock_location');
+
+  /// Deteksi lokasi palsu via sinyal native Android (API 18+ / 31+ + developer
+  /// options). Di iOS/web tidak ada padanan langsung → false (andalkan
+  /// `Position.isMocked` dari geolocator).
+  static Future<bool> isMockLocationNative() async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    try {
+      final res = await _mockChannel.invokeMethod<bool>('isMockLocation');
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Request GPS permission and verify location services are enabled
   static Future<bool> ensurePermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -45,19 +64,47 @@ class LocationService {
     return true;
   }
 
-  /// Get current GPS position with high accuracy
-  static Future<Position?> getCurrentPosition() async {
-    try {
-      final hasPermission = await ensurePermission();
-      if (!hasPermission) return null;
+  /// Get current GPS position with high accuracy.
+  /// Returns null on failure; callers use [lastError] for the reason.
+  static String? lastError;
 
+  static Future<Position?> getCurrentPosition() async {
+    lastError = null;
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        lastError = kIsWeb
+            ? 'Layanan lokasi browser tidak aktif. Aktifkan izin lokasi di pengaturan situs.'
+            : 'GPS perangkat tidak aktif. Nyalakan Lokasi lalu coba lagi.';
+        return null;
+      }
+
+      final hasPermission = await ensurePermission();
+      if (!hasPermission) {
+        final perm = await Geolocator.checkPermission();
+        if (perm == LocationPermission.deniedForever) {
+          lastError = kIsWeb
+              ? 'Izin lokasi diblokir permanen. Buka pengaturan situs browser dan izinkan Lokasi.'
+              : 'Izin lokasi diblokir permanen. Aktifkan di Pengaturan > Aplikasi > Izin.';
+        } else {
+          lastError = 'Izin lokasi diperlukan untuk memverifikasi kehadiran.';
+        }
+        return null;
+      }
+
+      // Web GPS (browser) sering perlu waktu lebih lama & butuh HTTPS.
+      const timeout =
+          kIsWeb ? Duration(seconds: 25) : Duration(seconds: 12);
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.best,
-          timeLimit: Duration(seconds: 12),
+          timeLimit: timeout,
         ),
       );
     } catch (_) {
+      lastError = kIsWeb
+          ? 'Gagal membaca lokasi. Pastikan situs diakses via HTTPS dan izin lokasi diizinkan.'
+          : 'Gagal membaca sinyal GPS. Coba di area terbuka.';
       return null;
     }
   }
@@ -78,12 +125,14 @@ class LocationService {
         isInside: false,
         distanceMeters: 9999,
         isMocked: false,
-        errorMessage: 'Gagal mendapatkan sinyal GPS. Pastikan lokasi aktif dan izin diberikan.',
+        errorMessage: lastError ??
+            'Gagal mendapatkan sinyal GPS. Pastikan lokasi aktif dan izin diberikan.',
       );
     }
 
-    // Anti-Mock GPS check
-    if (pos.isMocked) {
+    // Anti-Mock GPS check (geolocator flag + native Android detector)
+    final nativeMock = await isMockLocationNative();
+    if (pos.isMocked || nativeMock) {
       return GeofenceResult(
         isInside: false,
         distanceMeters: 9999,

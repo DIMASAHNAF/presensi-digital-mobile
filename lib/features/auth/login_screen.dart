@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/services/api_service.dart';
-import '../dashboard/dashboard_screen.dart';
+import 'auth_router.dart';
+import 'register_screen.dart';
+import '../../core/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,8 +53,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (res.success && res.data != null) {
         HapticFeedback.mediumImpact();
+        final user = res.data!;
         Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(builder: (_) => const DashboardScreen()),
+          CupertinoPageRoute(
+            builder: (_) =>
+                buildAuthDestination(resolveAuthStep(user), user),
+          ),
         );
       } else {
         HapticFeedback.heavyImpact();
@@ -78,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7), // Apple System Grouped Background
+      backgroundColor:  AppColors.background, // Apple System Grouped Background
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -92,16 +98,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Apple Pop-out Logo ──
+                    //  Apple Pop-out Logo
                     Center(
                       child: Container(
                         width: 84,
                         height: 84,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFE5E5EA),
+                            color:  AppColors.border,
                             width: 1,
                           ),
                           boxShadow: [
@@ -115,10 +121,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(14),
                         child: Image.asset(
                           'assets/images/logo.png',
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, __, ___) =>  Icon(
                             CupertinoIcons.checkmark_seal_fill,
                             size: 44,
-                            color: Color(0xFF007AFF),
+                            color: AppColors.primaryBlue,
                           ),
                         ),
                       ),
@@ -134,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ── Apple Large Title Typography ──
+                    //  Apple Large Title Typography
                     Text(
                       'Portal Siswa',
                       textAlign: TextAlign.center,
@@ -157,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF8E8E93),
+                        color:  AppColors.textMuted,
                       ),
                     )
                         .animate(delay: 250.ms)
@@ -165,25 +171,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 14),
 
-                    // ── Apple Biometric Badge ──
+                    //  Apple Biometric Badge
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF007AFF).withOpacity(0.08),
+                          color:  AppColors.primaryBlue.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFF007AFF).withOpacity(0.2),
+                            color:  AppColors.primaryBlue.withOpacity(0.2),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                             Icon(
                               CupertinoIcons.viewfinder,
                               size: 13,
-                              color: Color(0xFF007AFF),
+                              color: AppColors.primaryBlue,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -191,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF007AFF),
+                                color:  AppColors.primaryBlue,
                               ),
                             ),
                           ],
@@ -201,23 +207,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    // ── Error Banner ──
+                    //  Error Banner
                     if (_errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEBEB),
+                          color:  AppColors.dangerBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFFFF3B30).withOpacity(0.3),
+                            color:  AppColors.danger.withOpacity(0.3),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                             Icon(
                               CupertinoIcons.exclamationmark_circle_fill,
-                              color: Color(0xFFFF3B30),
+                              color: AppColors.danger,
                               size: 18,
                             ),
                             const SizedBox(width: 10),
@@ -226,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _errorMessage!,
                                 style: GoogleFonts.inter(
                                   fontSize: 12.5,
-                                  color: const Color(0xFFFF3B30),
+                                  color:  AppColors.danger,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -240,13 +246,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 18),
                     ],
 
-                    // ── Apple iOS Grouped Input Fields ──
+                    //  Apple iOS Grouped Input Fields
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(0xFFE5E5EA),
+                          color:  AppColors.border,
                           width: 0.8,
                         ),
                         boxShadow: [
@@ -272,12 +278,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               hintText: 'NISN atau Username Siswa',
                               hintStyle: GoogleFonts.inter(
-                                color: const Color(0xFFC7C7CC),
+                                color:  AppColors.textQuaternary,
                                 fontSize: 14,
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon:  Icon(
                                 CupertinoIcons.person_crop_circle,
-                                color: Color(0xFF8E8E93),
+                                color: AppColors.textMuted,
                                 size: 20,
                               ),
                               border: InputBorder.none,
@@ -294,8 +300,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
 
-                          const Divider(
-                              height: 1, indent: 48, color: Color(0xFFF2F2F7)),
+                           Divider(
+                              height: 1, indent: 48, color: AppColors.background),
 
                           // Password Field
                           TextFormField(
@@ -311,12 +317,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               hintText: 'Kata Sandi (Kosongkan jika login perdana)',
                               hintStyle: GoogleFonts.inter(
-                                color: const Color(0xFFC7C7CC),
+                                color:  AppColors.textQuaternary,
                                 fontSize: 13.5,
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon:  Icon(
                                 CupertinoIcons.lock_fill,
-                                color: Color(0xFF8E8E93),
+                                color: AppColors.textMuted,
                                 size: 19,
                               ),
                               suffixIcon: GestureDetector(
@@ -327,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _obscurePassword
                                       ? CupertinoIcons.eye_slash
                                       : CupertinoIcons.eye,
-                                  color: const Color(0xFF8E8E93),
+                                  color:  AppColors.textMuted,
                                   size: 19,
                                 ),
                               ),
@@ -348,17 +354,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── Apple Tactile Login Button ──
+                    //  Apple Tactile Login Button
                     GestureDetector(
                       onTap: _isLoading ? null : _handleLogin,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient:  LinearGradient(
                             colors: [
-                              Color(0xFF007AFF),
-                              Color(0xFF5856D6),
+                              AppColors.primaryBlue,
+                              AppColors.primaryIndigo,
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -366,7 +372,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF007AFF).withOpacity(0.35),
+                              color:  AppColors.primaryBlue.withOpacity(0.35),
                               blurRadius: 18,
                               offset: const Offset(0, 6),
                             ),
@@ -409,22 +415,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── iOS Info Card ──
+                    //  iOS Info Card
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: const Color(0xFFE5E5EA), width: 0.8),
+                            color:  AppColors.border, width: 0.8),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                           Icon(
                             CupertinoIcons.info_circle_fill,
                             size: 18,
-                            color: Color(0xFF007AFF),
+                            color: AppColors.primaryBlue,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -432,7 +438,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Gunakan NISN resmi dari sekolah. Jika lupa kata sandi atau akun terkunci, hubungi Walikelas atau Tim IT SMKN 1 Beringin.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: const Color(0xFF8E8E93),
+                                color:  AppColors.textMuted,
                                 height: 1.4,
                               ),
                             ),
@@ -440,6 +446,40 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ).animate(delay: 450.ms).fadeIn(duration: 400.ms),
+
+                    const SizedBox(height: 18),
+
+                    //  Register Link
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).push(
+                            CupertinoPageRoute(
+                                builder: (_) => const RegisterScreen()),
+                          );
+                        },
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'Belum punya akun? ',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color:  AppColors.textMuted,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Daftar Sekarang',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color:  AppColors.primaryBlue,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ).animate(delay: 500.ms).fadeIn(duration: 400.ms),
                   ],
                 ),
               ),

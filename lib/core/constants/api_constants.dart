@@ -5,6 +5,11 @@ class ApiConstants {
 
   // Auth Endpoints
   static const String login = '$baseUrl/auth/login';
+  static const String appConfig = '$baseUrl/app/config';
+  static const String register = '$baseUrl/auth/register';
+
+  // Master Data
+  static const String kelas = '$baseUrl/kelas';
 
   // Siswa Endpoints
   static const String me = '$baseUrl/siswa/me';
@@ -14,5 +19,8 @@ class ApiConstants {
   static const String scanWajah = '$baseUrl/siswa/scan-wajah';
   static const String enrollWajah = '$baseUrl/siswa/enroll-wajah';
   static const String riwayat = '$baseUrl/siswa/riwayat';
+  static const String notifications = '$baseUrl/siswa/notifications';
   static const String izin = '$baseUrl/siswa/izin';
+  static const String device = '$baseUrl/siswa/device';
+  static const String deviceReset = '$baseUrl/siswa/device/reset';
 }
