@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/models/kelas_model.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/school_branding.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../enrollment/enroll_wajah_screen.dart';
 import 'login_screen.dart';
@@ -161,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'SMK Negeri 1 Beringin • Pendaftaran Mandiri',
+                      '${SchoolBranding.name} • Pendaftaran Mandiri',
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

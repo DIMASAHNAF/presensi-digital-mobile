@@ -16,7 +16,6 @@ import '../../core/theme/app_theme.dart';
 import '../auth/login_screen.dart';
 import '../scanner/scanner_screen.dart';
 import '../enrollment/enroll_wajah_screen.dart';
-import 'dialogs/izin_sakit_dialog.dart';
 import 'dialogs/rekap_kehadiran_dialog.dart';
 import 'tabs/beranda_tab.dart';
 import 'tabs/kehadiran_tab.dart';
@@ -51,14 +50,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _updateClock();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
+    _clockTimer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
     // Realtime: poll sesi-aktif tiap 5 detik (mirror presensi web).
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollSession());
+    _pollTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _pollSession());
     if (widget.initialData != null) {
       _data = widget.initialData;
       _isLoading = false;
       if (_data!.geofencing != null) {
-        LocationService.verifyGeofence(_data!.geofencing!).then((geoRes) {
+        LocationService.verifyGeofence(
+          _data!.geofencing!,
+          networkConfig: _data!.network,
+        ).then((geoRes) {
           if (mounted) setState(() => _geofenceResult = geoRes);
         });
       }
@@ -80,7 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _updateClock() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 7)); // WIB (UTC+7)
+    final now =
+        DateTime.now().toUtc().add(const Duration(hours: 7)); // WIB (UTC+7)
     final formatted = DateFormat('HH:mm:ss').format(now);
     if (mounted) {
       setState(() {
@@ -100,7 +105,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final polled = _data!.applySessionPoll(res.data!);
         setState(() => _data = polled);
         if (polled.geofencing != null) {
-          final geoRes = await LocationService.verifyGeofence(polled.geofencing!);
+          final geoRes = await LocationService.verifyGeofence(
+            polled.geofencing!,
+            networkConfig: polled.network,
+          );
           if (mounted) setState(() => _geofenceResult = geoRes);
         }
       }
@@ -122,7 +130,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _data = res.data;
 
       if (_data!.geofencing != null) {
-        LocationService.verifyGeofence(_data!.geofencing!).then((geoRes) {
+        LocationService.verifyGeofence(
+          _data!.geofencing!,
+          networkConfig: _data!.network,
+        ).then((geoRes) {
           if (mounted) {
             setState(() => _geofenceResult = geoRes);
           }
@@ -158,7 +169,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Deteksi Wajah Belum Terdaftar: langsung arahkan ke Face ID Setup
     if (!_data!.user.isFaceEnrolled) {
       HapticFeedback.heavyImpact();
-      _showToast(' Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
+      _showToast(
+          ' Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
       _openEnrollment();
       return;
     }
@@ -174,23 +186,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             builder: (_) => ScannerScreen(
               geofenceConfig: _data!.geofencing!,
               sessionDetail: _data!.sesi,
+              networkConfig: _data!.network,
+              canScanMorning: _data!.canScanMorning,
             ),
           ),
         )
         .then((_) => _loadInitialData());
-  }
-
-  void _openIzinSakitModal() async {
-    if (_data == null) return;
-    HapticFeedback.lightImpact();
-    final res = await IzinSakitDialog.show(
-      context,
-      namaSiswa: _data!.user.nama,
-      kelasSiswa: _data!.user.kelas,
-    );
-    if (res == true) {
-      _loadInitialData();
-    }
   }
 
   void _openRekapModal() {
@@ -203,11 +204,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_data == null || _data!.geofencing == null) return;
     HapticFeedback.mediumImpact();
     _showToast(' Sedang membaca sensor koordinat GPS...');
-    final geoRes = await LocationService.verifyGeofence(_data!.geofencing!);
+    final geoRes = await LocationService.verifyGeofence(
+      _data!.geofencing!,
+      networkConfig: _data!.network,
+    );
     if (mounted) {
       setState(() => _geofenceResult = geoRes);
       _showToast(geoRes.isInside
-          ? ' Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)}m dari sekolah (Aman)'
+          ? (geoRes.verifiedByWifi
+              ? ' Terverifikasi melalui jaringan WiFi resmi sekolah (Aman)'
+              : ' Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)}m dari sekolah (Aman)')
           : ' Di luar radius: ${geoRes.distanceMeters > 2000 ? '>2km' : '${geoRes.distanceMeters.toStringAsFixed(0)}m'} (Maks 110m)');
     }
   }
@@ -217,7 +223,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+          style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600, color: Colors.white),
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -305,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:  AppColors.background, // Native Slate-50 Canvas
+      backgroundColor: AppColors.background, // Native Slate-50 Canvas
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark.copyWith(
           statusBarColor: Colors.transparent,
@@ -346,7 +353,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     currentTimeWIB: _currentTimeWIB,
                     onOpenScanner: _openScanner,
                     onOpenEnrollment: _openEnrollment,
-                    onOpenIzinSakit: _openIzinSakitModal,
                     onOpenRekap: _openRekapModal,
                     onOpenKehadiran: () => setState(() => _currentIndex = 1),
                     onOpenTeman: () => setState(() => _currentIndex = 2),
@@ -416,9 +422,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color:  AppColors.warningBg,
+          color: AppColors.warningBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color:  AppColors.warning.withOpacity(0.35)),
+          border: Border.all(color: AppColors.warning.withOpacity(0.35)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -429,7 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         child: Row(
           children: [
-             Icon(CupertinoIcons.cloud_upload,
+            Icon(CupertinoIcons.cloud_upload,
                 size: 18, color: AppColors.warning),
             const SizedBox(width: 10),
             Expanded(
@@ -438,7 +444,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color:  AppColors.amberDeep,
+                  color: AppColors.amberDeep,
                 ),
               ),
             ),
@@ -447,7 +453,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: GoogleFonts.inter(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w800,
-                color:  AppColors.warning,
+                color: AppColors.warning,
               ),
             ),
           ],
@@ -459,7 +465,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildTopBrandHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration:  BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
           bottom: BorderSide(color: AppColors.border, width: 1.0),
@@ -475,12 +481,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color:  AppColors.border),
+              border: Border.all(color: AppColors.border),
             ),
             child: Image.asset(
               'assets/images/logo.webp',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) =>  Icon(
+              errorBuilder: (_, __, ___) => Icon(
                 Icons.school_rounded,
                 color: AppColors.primaryBlue,
                 size: 20,
@@ -499,7 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  color:  AppColors.primaryDark,
+                  color: AppColors.primaryDark,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -508,7 +514,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w800,
-                  color:  AppColors.primaryBlue,
+                  color: AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -518,7 +524,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             width: 1,
             height: 20,
-            color:  AppColors.border,
+            color: AppColors.border,
           ),
           const SizedBox(width: 8),
 
@@ -535,15 +541,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           //  Actions Right: hanya logo & brand (panduan/toggle/logout dipindah ke Profil).
         ],
       ),
-    )
-      .animate()
-      .fadeIn(duration: 300.ms)
-      .slideY(begin: -0.3, end: 0);
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.3, end: 0);
   }
 
 //  Floating navigation bar
 
-  static const List<({String title, IconData activeIcon, IconData inactiveIcon})>
+  static const List<
+          ({String title, IconData activeIcon, IconData inactiveIcon})>
       _navItems = [
     (
       title: 'Beranda',
@@ -577,10 +581,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset + 8 : 16),
+            padding: EdgeInsets.fromLTRB(
+                16, 8, 16, bottomInset > 0 ? bottomInset + 8 : 16),
             decoration: BoxDecoration(
               color: AppColors.surface.withOpacity(0.96),
-              border:  Border(
+              border: Border(
                 top: BorderSide(
                   color: AppColors.border,
                   width: 1.0,
@@ -602,7 +607,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -610,18 +616,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           isSelected ? item.activeIcon : item.inactiveIcon,
                           size: 22,
                           color: isSelected
-                              ?  AppColors.primaryBlue
-                              :  AppColors.textMuted,
+                              ? AppColors.primaryBlue
+                              : AppColors.textMuted,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           item.title,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 10.5,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ?  AppColors.primaryBlue
-                                :  AppColors.textMuted,
+                                ? AppColors.primaryBlue
+                                : AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -646,7 +653,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // 1. Hero Header Shimmer
           Container(
             height: 250.0 + topPadding,
-            decoration:  BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppColors.primaryDeep, AppColors.primaryDeep],
                 begin: Alignment.topCenter,
@@ -710,7 +717,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color:  AppColors.shadow.withOpacity(0.06),
+                      color: AppColors.shadow.withOpacity(0.06),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -726,7 +733,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 110,
                           height: 22,
                           decoration: BoxDecoration(
-                            color:  AppColors.background,
+                            color: AppColors.background,
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
@@ -734,7 +741,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 80,
                           height: 14,
                           decoration: BoxDecoration(
-                            color:  AppColors.background,
+                            color: AppColors.background,
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
@@ -745,7 +752,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 140,
                       height: 24,
                       decoration: BoxDecoration(
-                        color:  AppColors.border,
+                        color: AppColors.border,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -754,7 +761,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 200,
                       height: 14,
                       decoration: BoxDecoration(
-                        color:  AppColors.background,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -764,7 +771,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 145,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color:  AppColors.background,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
@@ -779,27 +786,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(4, (index) => Column(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration:  BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 44,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color:  AppColors.border,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              )),
+              children: List.generate(
+                  4,
+                  (index) => Column(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 44,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: AppColors.border,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      )),
             ),
           ),
         ],
@@ -816,7 +825,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-             Icon(CupertinoIcons.exclamationmark_triangle_fill,
+            Icon(CupertinoIcons.exclamationmark_triangle_fill,
                 color: AppColors.warning, size: 48),
             const SizedBox(height: 16),
             Text(
@@ -831,7 +840,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               _errorMessage ?? 'Terjadi kesalahan sistem.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+              style:
+                  GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -839,7 +849,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
               child: const Text('Coba Lagi'),
             ),

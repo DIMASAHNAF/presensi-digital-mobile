@@ -16,25 +16,30 @@ import '../../core/services/location_service.dart';
 import '../../core/services/scan_queue_service.dart';
 import 'package:image/image.dart' as img;
 
-//  SCANNER SCREEN — Face ID scan experience
+//  SCANNER SCREEN — face scan experience
 //  • Natural 1x Wide Angle View (No awkward digital zoom)
-//  • Apple Face ID Setup 3D Radial Tick Dial (60 Sensory Rays)
-//  • Dynamic TrueDepth Holographic Biometric Depth Mesh
+//  • animated radial scan indicator
+//  • animated face-alignment overlay
 //  • Auto-Recognition & Tactile Shutter Trigger
-//  • Iconic Apple Face ID Verification HUD Modal
-//  • Vector Morphing Face Glyph -> Spring Checkmark
+//  • verification status modal
+//  • animated face glyph and success checkmark
 
 enum ScanState { ready, processing, success, failed }
+
 enum LivenessState { waitingFace, faceAligned, actionSuccess }
 
 class ScannerScreen extends StatefulWidget {
   final GeofenceConfig geofenceConfig;
   final SessionDetail? sessionDetail;
+  final NetworkConfig? networkConfig;
+  final bool canScanMorning;
 
   const ScannerScreen({
     super.key,
     required this.geofenceConfig,
     this.sessionDetail,
+    this.networkConfig,
+    this.canScanMorning = false,
   });
 
   @override
@@ -62,7 +67,14 @@ class _ScannerScreenState extends State<ScannerScreen>
   GeofenceResult? _geofenceResult;
   bool _isGpsValid = false;
   Timer? _gpsTimer;
+  Timer? _policyTimer;
   Timer? _autoAlignmentTimer;
+  late GeofenceConfig _geofenceConfig;
+  NetworkConfig? _networkConfig;
+  SessionDetail? _sessionDetail;
+  bool _policyReady = false;
+  bool _canScanMorning = false;
+  bool _isPolicyPolling = false;
 
   // Animations
   late AnimationController _pulseController;
@@ -77,9 +89,17 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void initState() {
     super.initState();
+    _geofenceConfig = widget.geofenceConfig;
+    _networkConfig = widget.networkConfig;
+    _sessionDetail = widget.sessionDetail;
+    _canScanMorning = widget.canScanMorning;
+    _policyReady = true;
     _initAnimations();
     _initGps();
     _initCamera();
+    _pollAttendancePolicy();
+    _policyTimer = Timer.periodic(
+        const Duration(seconds: 5), (_) => _pollAttendancePolicy());
   }
 
   void _initAnimations() {
@@ -116,7 +136,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 
   Future<void> _initGps() async {
-    if (!widget.geofenceConfig.active) {
+    if (!_geofenceConfig.active) {
       if (!mounted) return;
       setState(() {
         _isGpsValid = true;
@@ -124,7 +144,10 @@ class _ScannerScreenState extends State<ScannerScreen>
       return;
     }
 
-    final result = await LocationService.verifyGeofence(widget.geofenceConfig);
+    final result = await LocationService.verifyGeofence(
+      _geofenceConfig,
+      networkConfig: _networkConfig,
+    );
     if (!mounted) return;
     setState(() {
       _geofenceResult = result;
@@ -136,8 +159,11 @@ class _ScannerScreenState extends State<ScannerScreen>
 
     // Periodic GPS refresh every 10s
     _gpsTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      if (!widget.geofenceConfig.active) return;
-      final res = await LocationService.verifyGeofence(widget.geofenceConfig);
+      if (!_geofenceConfig.active) return;
+      final res = await LocationService.verifyGeofence(
+        _geofenceConfig,
+        networkConfig: _networkConfig,
+      );
       if (mounted) {
         setState(() {
           _geofenceResult = res;
@@ -145,6 +171,69 @@ class _ScannerScreenState extends State<ScannerScreen>
         });
       }
     });
+  }
+
+  Future<void> _pollAttendancePolicy() async {
+    if (_isPolicyPolling) return;
+    _isPolicyPolling = true;
+    try {
+      final response = await ApiService.getActiveSession();
+      final poll = response.data;
+      if (!mounted || !response.success || poll == null) return;
+      final nextGeofence = poll.geofencing ?? _geofenceConfig;
+      final geofenceChanged = nextGeofence.active != _geofenceConfig.active ||
+          nextGeofence.mode != _geofenceConfig.mode ||
+          nextGeofence.latitude != _geofenceConfig.latitude ||
+          nextGeofence.longitude != _geofenceConfig.longitude ||
+          nextGeofence.radiusMeters != _geofenceConfig.radiusMeters;
+      setState(() {
+        _geofenceConfig = nextGeofence;
+        _networkConfig = poll.network ?? _networkConfig;
+        _sessionDetail = poll.sesi;
+        _canScanMorning = canScanMorningAttendance(
+          hasSesi: poll.hasSesi,
+          sudahHadir: poll.sudahHadir,
+          sessionType: poll.sesi?.tipe,
+        );
+        _policyReady = true;
+      });
+      if (geofenceChanged || _geofenceResult == null) {
+        final result = await LocationService.verifyGeofence(
+          _geofenceConfig,
+          networkConfig: _networkConfig,
+        );
+        if (mounted) {
+          setState(() {
+            _geofenceResult = result;
+            _isGpsValid = !_geofenceConfig.active ||
+                (result.isInside && !result.isMocked);
+          });
+        }
+      }
+    } catch (_) {
+      // Rust API tetap memvalidasi kebijakan saat polling gagal.
+    } finally {
+      _isPolicyPolling = false;
+    }
+  }
+
+  bool _scanPolicyAllowed() {
+    if (!_policyReady) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Memeriksa kebijakan presensi. Coba lagi sebentar.'),
+      ));
+      return false;
+    }
+    if (scanPolicyBlocks(_canScanMorning, _networkConfig)) {
+      final networkBlocked = _networkConfig?.blocksScan == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(networkBlocked
+            ? 'Presensi ditolak: hubungkan perangkat ke jaringan Wi-Fi resmi SMKN 1 Beringin.'
+            : 'Sesi presensi pagi tidak aktif atau presensi hari ini sudah tercatat.'),
+      ));
+      return false;
+    }
+    return true;
   }
 
   Future<void> _initCamera() async {
@@ -229,7 +318,8 @@ class _ScannerScreenState extends State<ScannerScreen>
     if (mounted) {
       setState(() {
         _scanState = ScanState.failed;
-        _scanErrorMessage = 'Gagal menginisialisasi kamera: $_cameraErrorDetail';
+        _scanErrorMessage =
+            'Gagal menginisialisasi kamera: $_cameraErrorDetail';
       });
     }
   }
@@ -271,8 +361,10 @@ class _ScannerScreenState extends State<ScannerScreen>
       return;
     }
 
+    if (!_scanPolicyAllowed()) return;
+
     // Geofence enforcement if enabled by admin
-    if (widget.geofenceConfig.active && !_isGpsValid) {
+    if (_geofenceConfig.active && !_isGpsValid) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -291,7 +383,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     HapticFeedback.selectionClick();
     setState(() {
       _livenessState = LivenessState.faceAligned;
-      _livenessPrompt = 'Memindai Biometrik Wajah...';
+      _livenessPrompt = 'Menyiapkan pemindaian wajah...';
       _actionProgress = 0.15;
     });
 
@@ -329,8 +421,36 @@ class _ScannerScreenState extends State<ScannerScreen>
       return;
     }
 
+    await _pollAttendancePolicy();
+    if (!mounted) return;
+    if (!_scanPolicyAllowed()) {
+      setState(() => _scanState = ScanState.ready);
+      return;
+    }
+    if (_geofenceConfig.active) {
+      final fresh = await LocationService.verifyGeofence(
+        _geofenceConfig,
+        networkConfig: _networkConfig,
+      );
+      if (!mounted) return;
+      setState(() {
+        _geofenceResult = fresh;
+        _isGpsValid = fresh.isInside && !fresh.isMocked;
+      });
+      if (!_isGpsValid || (fresh.position == null && !fresh.verifiedByWifi)) {
+        setState(() => _scanState = ScanState.ready);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(fresh.errorMessage ??
+              'Presensi ditolak: lokasi GPS belum valid.'),
+          backgroundColor: const Color(0xFFFF3B30),
+          behavior: SnackBarBehavior.floating,
+        ));
+        return;
+      }
+    }
+
     // Geofence enforcement if enabled by admin
-    if (widget.geofenceConfig.active && !_isGpsValid) {
+    if (_geofenceConfig.active && !_isGpsValid) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -345,13 +465,13 @@ class _ScannerScreenState extends State<ScannerScreen>
       return;
     }
 
-    // Trigger visual Apple Shutter Flash & Haptics
+    // Trigger shutter flash and haptics before server verification.
     HapticFeedback.mediumImpact();
     setState(() {
+      _livenessPrompt = 'Menyiapkan foto untuk verifikasi server...';
       _showShutterFlash = true;
       _livenessState = LivenessState.actionSuccess;
       _actionProgress = 1.0;
-      _livenessPrompt = 'Wajah Siap! Memverifikasi...';
     });
 
     await Future.delayed(const Duration(milliseconds: 140));
@@ -369,15 +489,16 @@ class _ScannerScreenState extends State<ScannerScreen>
       final bytes = await xFile.readAsBytes();
       final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
-      // 2. Read GPS coordinates
+      // 2. Read GPS coordinates (support verified school WiFi fallback when indoor GPS is null)
       Position? pos;
-      if (widget.geofenceConfig.active) {
+      final bool wifiFallback = _geofenceResult?.verifiedByWifi == true;
+      if (_geofenceConfig.active && !wifiFallback) {
         pos = _geofenceResult?.position ??
             await LocationService.getCurrentPosition();
       }
-      final lat = pos?.latitude ?? widget.geofenceConfig.latitude;
-      final lng = pos?.longitude ?? widget.geofenceConfig.longitude;
-      final accuracy = pos?.accuracy ?? 10.0;
+      final double? lat = pos?.latitude ?? (wifiFallback ? null : _geofenceConfig.latitude);
+      final double? lng = pos?.longitude ?? (wifiFallback ? null : _geofenceConfig.longitude);
+      final double? accuracy = pos?.accuracy ?? (wifiFallback ? null : 10.0);
       final isMocked = (pos?.isMocked ?? false) ||
           await LocationService.isMockLocationNative();
       final gpsTimestampMs = pos?.timestamp.millisecondsSinceEpoch;
@@ -391,7 +512,7 @@ class _ScannerScreenState extends State<ScannerScreen>
         accuracy: accuracy,
         isMocked: isMocked,
         gpsTimestampMs: gpsTimestampMs,
-        sesiId: widget.sessionDetail?.id,
+        sesiId: _sessionDetail?.id,
         deviceId: deviceId,
       );
 
@@ -432,12 +553,12 @@ class _ScannerScreenState extends State<ScannerScreen>
 
         await ScanQueueService.enqueue(
           imageBase64: queuedImage,
-          latitude: lat,
-          longitude: lng,
-          accuracy: accuracy,
+          latitude: lat ?? _geofenceConfig.latitude,
+          longitude: lng ?? _geofenceConfig.longitude,
+          accuracy: accuracy ?? 10.0,
           isMocked: isMocked,
           gpsTimestampMs: gpsTimestampMs,
-          sesiId: widget.sessionDetail?.id,
+          sesiId: _sessionDetail?.id,
           deviceId: deviceId,
         );
 
@@ -484,6 +605,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void dispose() {
     _autoAlignmentTimer?.cancel();
+    _policyTimer?.cancel();
     _gpsTimer?.cancel();
     _pulseController.dispose();
     _scanBeamController.dispose();
@@ -528,7 +650,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1C1C1E).withOpacity(0.85),
+                                color:
+                                    const Color(0xFF1C1C1E).withOpacity(0.85),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.18),
@@ -549,18 +672,22 @@ class _ScannerScreenState extends State<ScannerScreen>
                               vertical: 7,
                             ),
                             decoration: BoxDecoration(
-                              color: !widget.geofenceConfig.active
+                              color: !_geofenceConfig.active
                                   ? const Color(0xFF34C759).withOpacity(0.20)
                                   : (_isGpsValid
-                                      ? const Color(0xFF34C759).withOpacity(0.20)
-                                      : const Color(0xFFFF3B30).withOpacity(0.20)),
+                                      ? const Color(0xFF34C759)
+                                          .withOpacity(0.20)
+                                      : const Color(0xFFFF3B30)
+                                          .withOpacity(0.20)),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: !widget.geofenceConfig.active
+                                color: !_geofenceConfig.active
                                     ? const Color(0xFF30D158).withOpacity(0.40)
                                     : (_isGpsValid
-                                        ? const Color(0xFF30D158).withOpacity(0.40)
-                                        : const Color(0xFFFF6961).withOpacity(0.40)),
+                                        ? const Color(0xFF30D158)
+                                            .withOpacity(0.40)
+                                        : const Color(0xFFFF6961)
+                                            .withOpacity(0.40)),
                               ),
                             ),
                             child: Row(
@@ -571,7 +698,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   height: 7,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: !widget.geofenceConfig.active
+                                    color: !_geofenceConfig.active
                                         ? const Color(0xFF30D158)
                                         : (_isGpsValid
                                             ? const Color(0xFF30D158)
@@ -580,9 +707,11 @@ class _ScannerScreenState extends State<ScannerScreen>
                                 ),
                                 const SizedBox(width: 7),
                                 Text(
-                                  !widget.geofenceConfig.active
+                                  !_geofenceConfig.active
                                       ? 'Lokasi Bebas (Admin)'
-                                      : (_isGpsValid ? 'GPS Terkunci' : 'Di Luar Area'),
+                                      : (_isGpsValid
+                                          ? 'GPS Terkunci'
+                                          : 'Di Luar Area'),
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
@@ -600,7 +729,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1C1C1E).withOpacity(0.85),
+                                color:
+                                    const Color(0xFF1C1C1E).withOpacity(0.85),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.18),
@@ -618,9 +748,9 @@ class _ScannerScreenState extends State<ScannerScreen>
 
                       const SizedBox(height: 24),
 
-                      // Apple Face ID Header Title & Subtitle
+                      // Scanner header title & subtitle
                       Text(
-                        'Face ID',
+                        'Presensi Wajah',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
@@ -650,7 +780,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                   children: [
                     // A. Apple Face ID 3D Radial Tick Dial (60 Sensory Rays)
                     AnimatedBuilder(
-                      animation: Listenable.merge([_pulseAnimation, _scanBeamAnimation]),
+                      animation: Listenable.merge(
+                          [_pulseAnimation, _scanBeamAnimation]),
                       builder: (context, _) {
                         return CustomPaint(
                           size: Size(
@@ -689,7 +820,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                             // Live Camera Feed
                             _buildCameraViewport(),
 
-                            // TrueDepth Holographic Biometric Depth Mesh
+                            // animated face-alignment overlay
                             AnimatedBuilder(
                               animation: _scanBeamAnimation,
                               builder: (context, _) {
@@ -820,17 +951,19 @@ class _ScannerScreenState extends State<ScannerScreen>
                   color: Colors.white,
                 ),
 
-              //  5. Face ID system sheet modal overlays
+              //  5. Verification sheet modal overlays
               if (_scanState == ScanState.processing)
                 _buildAppleFaceIdModal(
-                  title: 'Memverifikasi Face ID',
-                  subtitle: 'Mencocokkan biometrik ArcFace 512-D...',
+                  title: 'Memverifikasi Wajah',
+                  subtitle: 'Memverifikasi foto kehadiran dengan server...',
                   isProcessing: true,
                 ),
 
               if (_scanState == ScanState.success)
                 _buildAppleFaceIdModal(
-                  title: _scanQueuedOffline ? 'Tersimpan Offline' : 'Presensi Berhasil',
+                  title: _scanQueuedOffline
+                      ? 'Tersimpan Offline'
+                      : 'Presensi Berhasil',
                   subtitle: _scanQueuedOffline
                       ? 'Presensi akan dikirim otomatis saat internet kembali ($_waktuScanSuccess)'
                       : (_waktuScanSuccess.isNotEmpty
@@ -839,8 +972,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                   isSuccess: true,
                 ),
 
-              if (_scanState == ScanState.failed)
-                _buildAppleFailedModal(),
+              if (_scanState == ScanState.failed) _buildAppleFailedModal(),
             ],
           );
         },
@@ -992,7 +1124,9 @@ class _ScannerScreenState extends State<ScannerScreen>
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Center(
           child: ScaleTransition(
-            scale: isSuccess ? _hudMorphAnimation : const AlwaysStoppedAnimation(1.0),
+            scale: isSuccess
+                ? _hudMorphAnimation
+                : const AlwaysStoppedAnimation(1.0),
             child: Container(
               width: 270,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -1089,8 +1223,10 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   Widget _buildAppleFailedModal() {
     final msgLower = _scanErrorMessage.toLowerCase();
-    final isDark = msgLower.contains('gelap') || msgLower.contains('pencahayaan');
-    final isOverexposed = msgLower.contains('terang') || msgLower.contains('silau');
+    final isDark =
+        msgLower.contains('gelap') || msgLower.contains('pencahayaan');
+    final isOverexposed =
+        msgLower.contains('terang') || msgLower.contains('silau');
     final isPartial = msgLower.contains('utuh') ||
         msgLower.contains('terpotong') ||
         msgLower.contains('masker') ||
@@ -1416,7 +1552,8 @@ class _AppleFaceIdGlyphPainter extends CustomPainter {
     final tlPath = Path()
       ..moveTo(0, cornerLen)
       ..lineTo(0, radius)
-      ..arcToPoint(const Offset(radius, 0), radius: const Radius.circular(radius))
+      ..arcToPoint(const Offset(radius, 0),
+          radius: const Radius.circular(radius))
       ..lineTo(cornerLen, 0);
     canvas.drawPath(tlPath, bracketPaint);
 

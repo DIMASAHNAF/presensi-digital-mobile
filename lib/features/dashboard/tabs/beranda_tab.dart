@@ -24,7 +24,6 @@ class BerandaTab extends StatefulWidget {
   final String currentTimeWIB;
   final VoidCallback onOpenScanner;
   final VoidCallback? onOpenEnrollment;
-  final VoidCallback onOpenIzinSakit;
   final VoidCallback onOpenRekap;
   final VoidCallback onOpenKehadiran;
   final VoidCallback onOpenTeman;
@@ -39,7 +38,6 @@ class BerandaTab extends StatefulWidget {
     required this.currentTimeWIB,
     required this.onOpenScanner,
     this.onOpenEnrollment,
-    required this.onOpenIzinSakit,
     required this.onOpenRekap,
     required this.onOpenKehadiran,
     required this.onOpenTeman,

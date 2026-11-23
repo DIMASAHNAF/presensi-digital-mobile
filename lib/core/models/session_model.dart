@@ -1,3 +1,15 @@
+class NetworkConfig {
+  final bool active;
+  final bool isAllowed;
+
+  const NetworkConfig({required this.active, required this.isAllowed});
+
+  factory NetworkConfig.fromJson(Map<String, dynamic> json) => NetworkConfig(
+        active: json['active'] == true,
+        isAllowed: json['is_allowed'] == true,
+      );
+}
+
 class LatLngPoint {
   final double lat;
   final double lng;
@@ -32,7 +44,8 @@ class GeofenceConfig {
   });
 
   factory GeofenceConfig.fromJson(Map<String, dynamic> json) {
-    var rawPolygon = json['polygon_points'] as List<dynamic>? ?? [];
+    var rawPolygon =
+        (json['polygon_points'] ?? json['polygon']) as List<dynamic>? ?? [];
     List<LatLngPoint> points = rawPolygon
         .map((p) => LatLngPoint.fromJson(p as Map<String, dynamic>))
         .toList();
@@ -40,9 +53,9 @@ class GeofenceConfig {
     return GeofenceConfig(
       active: json['active'] ?? false,
       schoolName: json['school_name'] ?? 'SMK Negeri 1 Beringin',
-      mode: json['mode'] ?? 'polygon',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 3.5866,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 98.8813,
+      mode: json['mode'] ?? json['geofence_mode'] ?? 'polygon',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 3.586138,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 98.881361,
       radiusMeters: (json['radius_meters'] as num?)?.toDouble() ?? 100.0,
       polygonPoints: points,
     );
@@ -59,7 +72,8 @@ class SessionDetail {
   final String tipe;
 
   String get namaKelas => kelasNama;
-  String get keterangan => guruNama.isNotEmpty ? 'Guru: $guruNama' : 'Presensi Pembelajaran';
+  String get keterangan =>
+      guruNama.isNotEmpty ? 'Guru: $guruNama' : 'Presensi Pembelajaran';
 
   // Smart subject name extraction:
   String get namaMapel {
@@ -101,8 +115,10 @@ class SessionDetail {
     return 'Jam Pelajaran';
   }
 
-  String get jamMulai => jadwalJam.contains('-') ? jadwalJam.split('-').first.trim() : jadwalJam;
-  String get jamSelesai => jadwalJam.contains('-') ? jadwalJam.split('-').last.trim() : jadwalJam;
+  String get jamMulai =>
+      jadwalJam.contains('-') ? jadwalJam.split('-').first.trim() : jadwalJam;
+  String get jamSelesai =>
+      jadwalJam.contains('-') ? jadwalJam.split('-').last.trim() : jadwalJam;
 
   SessionDetail({
     required this.id,
@@ -157,6 +173,7 @@ class ActiveSessionResponse {
   final SessionDetail? sesi;
   final PresensiTodayInfo? presensiInfo;
   final GeofenceConfig? geofencing;
+  final NetworkConfig? network;
 
   ActiveSessionResponse({
     required this.hasSesi,
@@ -164,6 +181,7 @@ class ActiveSessionResponse {
     this.sesi,
     this.presensiInfo,
     this.geofencing,
+    this.network,
   });
 
   factory ActiveSessionResponse.fromJson(Map<String, dynamic> json) {
@@ -177,6 +195,31 @@ class ActiveSessionResponse {
       geofencing: json['geofencing'] != null
           ? GeofenceConfig.fromJson(json['geofencing'])
           : null,
+      network: json['network'] != null
+          ? NetworkConfig.fromJson(json['network'])
+          : json['network_config'] != null
+              ? NetworkConfig.fromJson(json['network_config'])
+              : null,
     );
   }
 }
+
+extension NetworkConfigPolicy on NetworkConfig {
+  /// Whitelist policy only blocks when the admin toggle is active.
+  bool get blocksScan => active && !isAllowed;
+}
+
+/// Allows one morning class attendance per WIB day; server owns duplicate rejection.
+bool canScanMorningAttendance({
+  required bool hasSesi,
+  required bool sudahHadir,
+  required String? sessionType,
+}) =>
+    hasSesi &&
+    !sudahHadir &&
+    (sessionType ?? '').toLowerCase() == 'kelas';
+
+/// No policy response means server remains authoritative; offline queue stays available.
+/// device without connectivity may still queue its scan.
+bool scanPolicyBlocks(bool? canScanMorning, NetworkConfig? network) =>
+    canScanMorning == false || (network?.blocksScan ?? false);

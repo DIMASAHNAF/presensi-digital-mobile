@@ -35,8 +35,9 @@ class JadwalItem {
     );
   }
 
-  String get jamLabel =>
-      (jamMulai.isEmpty && jamSelesai.isEmpty) ? '-' : '$jamMulai - $jamSelesai';
+  String get jamLabel => (jamMulai.isEmpty && jamSelesai.isEmpty)
+      ? '-'
+      : '$jamMulai - $jamSelesai';
 
   String get lesLabel => 'Jam ke-$jamKe';
 }
@@ -82,7 +83,9 @@ class CalendarData {
       year: json['year'] ?? 2026,
       daysInMonth: json['days_in_month'] ?? 30,
       todayDay: json['today_day'] ?? 1,
-      days: raw.map((d) => CalendarDay.fromJson(d as Map<String, dynamic>)).toList(),
+      days: raw
+          .map((d) => CalendarDay.fromJson(d as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -175,6 +178,7 @@ class DashboardFullModel {
   final SessionDetail? sesi;
   final PresensiTodayInfo? presensiInfo;
   final GeofenceConfig? geofencing;
+  final NetworkConfig? network;
   final List<ClassmateModel> temanSekelas;
   final int totalTeman;
   final List<dynamic> riwayat;
@@ -189,6 +193,7 @@ class DashboardFullModel {
     this.sesi,
     this.presensiInfo,
     this.geofencing,
+    this.network,
     required this.temanSekelas,
     required this.totalTeman,
     required this.riwayat,
@@ -216,6 +221,9 @@ class DashboardFullModel {
       geofencing: json['geofencing'] != null
           ? GeofenceConfig.fromJson(json['geofencing'])
           : null,
+      network: json['network'] != null
+          ? NetworkConfig.fromJson(json['network'])
+          : null,
       temanSekelas: friends,
       totalTeman: json['total_teman'] ?? friends.length,
       riwayat: json['riwayat'] as List<dynamic>? ?? [],
@@ -236,6 +244,7 @@ class DashboardFullModel {
     SessionDetail? sesi,
     PresensiTodayInfo? presensiInfo,
     GeofenceConfig? geofencing,
+    NetworkConfig? network,
     List<ClassmateModel>? temanSekelas,
     int? totalTeman,
     List<dynamic>? riwayat,
@@ -250,6 +259,7 @@ class DashboardFullModel {
       sesi: sesi ?? this.sesi,
       presensiInfo: presensiInfo ?? this.presensiInfo,
       geofencing: geofencing ?? this.geofencing,
+      network: network ?? this.network,
       temanSekelas: temanSekelas ?? this.temanSekelas,
       totalTeman: totalTeman ?? this.totalTeman,
       riwayat: riwayat ?? this.riwayat,
@@ -257,6 +267,9 @@ class DashboardFullModel {
       calendar: calendar ?? this.calendar,
     );
   }
+
+  bool get canScanMorning =>
+      hasSesi && !sudahHadir && sesi?.tipe.toLowerCase() == 'kelas';
 
   /// Terapkan hasil polling `/siswa/sesi-aktif` tanpa reload penuh.
   DashboardFullModel applySessionPoll(ActiveSessionResponse poll) {
@@ -268,6 +281,7 @@ class DashboardFullModel {
       sesi: poll.sesi,
       presensiInfo: poll.presensiInfo ?? presensiInfo,
       geofencing: poll.geofencing ?? geofencing,
+      network: poll.network ?? network,
       temanSekelas: temanSekelas,
       totalTeman: totalTeman,
       riwayat: riwayat,
@@ -276,4 +290,3 @@ class DashboardFullModel {
     );
   }
 }
-

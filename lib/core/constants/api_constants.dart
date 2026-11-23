@@ -1,5 +1,5 @@
 class ApiConstants {
-  // Base URL pointing directly to the proxied Golang Microservice
+  // Base URL pointing directly to the proxied Rust Microservice (presensi-rust-api v2)
   static const String baseUrl = 'https://presensi.smknegeri1beringin.sch.id/api/v1';
   static const String storageBaseUrl = 'https://presensi.smknegeri1beringin.sch.id/storage';
 
@@ -20,7 +20,6 @@ class ApiConstants {
   static const String enrollWajah = '$baseUrl/siswa/enroll-wajah';
   static const String riwayat = '$baseUrl/siswa/riwayat';
   static const String notifications = '$baseUrl/siswa/notifications';
-  static const String izin = '$baseUrl/siswa/izin';
   static const String device = '$baseUrl/siswa/device';
   static const String deviceReset = '$baseUrl/siswa/device/reset';
 }

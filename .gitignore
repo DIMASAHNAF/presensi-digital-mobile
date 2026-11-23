@@ -30,6 +30,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+android/build/
 
 # Android related
 **/android/**/gradle-wrapper.jar
@@ -94,3 +95,4 @@ android/key.properties
 *.presign.bak_*
 *.multiref.bak_*
 docs/superpowers/
+*.bak*

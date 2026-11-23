@@ -144,40 +144,6 @@ class ApiService {
     }
   }
 
-  /// Submit Izin / Sakit Real-Time
-  static Future<ApiResponse<void>> submitIzin({
-    required String jenis,
-    required String keterangan,
-  }) async {
-    try {
-      final response = await _client.post(
-        Uri.parse(ApiConstants.izin),
-        headers: _headers(withAuth: true),
-        body: jsonEncode({
-          'jenis': jenis.toLowerCase(),
-          'keterangan': keterangan.trim(),
-        }),
-      ).timeout(const Duration(seconds: 15));
-
-      final body = jsonDecode(response.body);
-      if (response.statusCode == 200 && body['success'] == true) {
-        return ApiResponse(
-          success: true,
-          message: body['message'] ?? 'Permohonan berhasil dicatat.',
-        );
-      }
-      return ApiResponse(
-        success: false,
-        message: body['message'] ?? 'Gagal mengajukan permohonan.',
-      );
-    } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Koneksi gagal saat mengajukan permohonan.',
-      );
-    }
-  }
-
   /// 2. Get Full Dashboard Data (Profile, Active Session, Stats, Classmates, History)
   static Future<ApiResponse<DashboardFullModel>> getDashboardFull() async {
     try {
@@ -299,12 +265,12 @@ class ApiService {
     }
   }
 
-  /// 4. Submit Face Scan Biometrics + GPS
+  /// 4. Submit Face Scan Biometrics + GPS (mendukung fallback WiFi sekolah jika GPS null)
   static Future<ApiResponse<Map<String, dynamic>>> submitFaceScan({
     required String imageBase64,
-    required double latitude,
-    required double longitude,
-    required double accuracy,
+    double? latitude,
+    double? longitude,
+    double? accuracy,
     required bool isMocked,
     int? gpsTimestampMs,
     int? sesiId,
@@ -314,12 +280,16 @@ class ApiService {
       final payload = <String, dynamic>{
         'image': imageBase64,
         'face_image': imageBase64,
-        'latitude': latitude,
-        'longitude': longitude,
-        'accuracy': accuracy,
         'is_mock': isMocked,
         'is_mocked': isMocked,
       };
+      if (latitude != null && longitude != null) {
+        payload['latitude'] = latitude;
+        payload['longitude'] = longitude;
+      }
+      if (accuracy != null) {
+        payload['accuracy'] = accuracy;
+      }
       if (deviceId != null && deviceId.isNotEmpty) {
         payload['device_id'] = deviceId;
       }

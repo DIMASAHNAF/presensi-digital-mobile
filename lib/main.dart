@@ -6,6 +6,7 @@ import 'core/services/storage_service.dart';
 import 'core/services/telemetry_service.dart';
 import 'core/services/scan_queue_service.dart';
 import 'core/services/theme_service.dart';
+import 'core/services/school_branding.dart';
 import 'features/splash/splash_screen.dart';
 
 void main() async {
@@ -22,6 +23,9 @@ void main() async {
 
   // C12. Tema tersimpan (light/dark/system).
   await ThemeService.init();
+
+  // C1. Nama sekolah terakhir (untuk splash/login sebelum dashboard termuat).
+  await SchoolBranding.init();
 
   runApp(const PresensiApp());
 
@@ -41,7 +45,7 @@ class PresensiApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeService.mode,
       builder: (context, themeMode, _) => MaterialApp(
-      title: 'Presensi SMKN 1 Beringin',
+      title: 'Presensi ${SchoolBranding.name}',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -49,7 +53,18 @@ class PresensiApp extends StatelessWidget {
       builder: (context, child) {
         // C12. Selaraskan token AppColors dengan brightness aktif.
         AppColors.configure(Theme.of(context).brightness);
-        return child ?? const SizedBox.shrink();
+        // C3. Hormati ukuran teks sistem, tetapi batasi agar layout 360dp
+        // tidak pecah pada skala ekstrem.
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: media.textScaler.clamp(
+              minScaleFactor: 0.9,
+              maxScaleFactor: 1.3,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
       },
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

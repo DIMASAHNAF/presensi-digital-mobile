@@ -28,6 +28,81 @@ DashboardFullModel _base() => DashboardFullModel(
     );
 
 void main() {
+  group('mobile attendance policy contract', () {
+    test('network polling state reflects configured Wi-Fi policy', () {
+      final network = NetworkConfig.fromJson({
+        'active': true,
+        'is_allowed': false,
+      });
+
+      expect(network.active, isTrue);
+      expect(network.isAllowed, isFalse);
+    });
+
+    test('poll merges server network state and geofence configuration', () {
+      final poll = ActiveSessionResponse.fromJson({
+        'success': true,
+        'has_sesi': true,
+        'sudah_hadir': false,
+        'sesi': {
+          'id': 7,
+          'kelas_id': 1,
+          'kelas_nama': 'X PPLG 1',
+          'jam_pelajaran': 'Pagi',
+          'guru_nama': 'Budi',
+          'tanggal': '2026-11-15',
+          'tipe': 'kelas',
+        },
+        'network': {'active': true, 'is_allowed': false},
+        'geofencing': {
+          'active': true,
+          'mode': 'radius',
+          'school_name': 'SMKN 1 Beringin',
+          'latitude': 3.586138,
+          'longitude': 98.881361,
+          'radius_meters': 100,
+        },
+      });
+      final merged = _base().applySessionPoll(poll);
+      expect(merged.network?.active, isTrue);
+      expect(merged.network?.isAllowed, isFalse);
+      expect(merged.geofencing?.latitude, 3.586138);
+      expect(merged.geofencing?.longitude, 98.881361);
+    });
+
+    test('morning scanner requires open class session and no attendance', () {
+      final model = _base().copyWith(
+        hasSesi: true,
+        sesi: SessionDetail(
+          id: 7,
+          kelasId: 1,
+          kelasNama: 'X PPLG 1',
+          jamPelajaran: 'Pagi',
+          guruNama: 'Budi',
+          tanggal: '2026-11-15',
+          tipe: 'kelas',
+        ),
+      );
+      expect(model.canScanMorning, isTrue);
+      expect(model.copyWith(sudahHadir: true).canScanMorning, isFalse);
+      expect(model.copyWith(hasSesi: false).canScanMorning, isFalse);
+      expect(
+          model
+              .copyWith(
+                  sesi: SessionDetail(
+                id: 8,
+                kelasId: 1,
+                kelasNama: 'X PPLG 1',
+                jamPelajaran: 'Matematika',
+                guruNama: 'Budi',
+                tanggal: '2026-11-15',
+                tipe: 'mapel',
+              ))
+              .canScanMorning,
+          isFalse);
+    });
+  });
+
   group('applySessionPoll', () {
     test('poll dengan sesi baru -> hasSesi true, sesi terpasang', () {
       final base = _base();

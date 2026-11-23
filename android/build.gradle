@@ -13,10 +13,22 @@ subprojects {
 subprojects {
     if (project.name != "app") {
         project.ext.flutter = [
-            compileSdkVersion: 35,
+            compileSdkVersion: 36,
             minSdkVersion: 23,
             targetSdkVersion: 35
         ]
+    }
+}
+
+// AGP 9.x Android Lint invokes JDK 21 APIs (List.removeLast); skip release lint on JDK < 21.
+subprojects {
+    if (JavaVersion.current() < JavaVersion.VERSION_21) {
+        plugins.withId("com.android.library") {
+            android.lint {
+                checkReleaseBuilds = false
+                abortOnError = false
+            }
+        }
     }
 }
 

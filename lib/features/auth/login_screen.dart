@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/school_branding.dart';
 import 'auth_router.dart';
 import 'register_screen.dart';
 import '../../core/theme/app_theme.dart';
@@ -158,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 4),
 
                     Text(
-                      'SMK Negeri 1 Beringin • Masuk Akun',
+                      '${SchoolBranding.name} • Masuk Akun',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 13,
@@ -435,7 +436,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Gunakan NISN resmi dari sekolah. Jika lupa kata sandi atau akun terkunci, hubungi Walikelas atau Tim IT SMKN 1 Beringin.',
+                              'Gunakan NISN resmi dari sekolah. Jika lupa kata sandi atau akun terkunci, hubungi Walikelas atau Tim IT ${SchoolBranding.name}.',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color:  AppColors.textMuted,
