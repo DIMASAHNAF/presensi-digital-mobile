@@ -202,15 +202,13 @@ class ProfilTab extends StatelessWidget {
             _buildTile(
               icon: CupertinoIcons.viewfinder,
               iconColor: user.isFaceEnrolled
-                  ?  AppColors.success
-                  :  AppColors.warning,
+                  ? AppColors.success
+                  : AppColors.warning,
               label: 'Face ID Biometrik',
-              value: user.isFaceEnrolled
-                  ? 'Terverifikasi & Aktif'
-                  : 'Belum Terdaftar',
+              value: user.isFaceEnrolled ? 'Aktif' : 'Belum Rekam',
               valueColor: user.isFaceEnrolled
-                  ?  AppColors.success
-                  :  AppColors.warning,
+                  ? AppColors.success
+                  : AppColors.warning,
               onTap: !user.isFaceEnrolled ? onOpenEnrollment : null,
             ),
             _buildActionTile(
@@ -594,30 +592,33 @@ class ProfilTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'DATA AKADEMIK & IDENTITAS SISWA',
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color:  AppColors.textMuted,
-                  letterSpacing: 0.6,
+              Expanded(
+                child: Text(
+                  'DATA AKADEMIK & IDENTITAS',
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.6,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color:  AppColors.background,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color:  AppColors.textQuaternary),
                 ),
                 child: Text(
                   'DAPODIK',
                   style: GoogleFonts.inter(
                     fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    color:  AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -702,16 +703,20 @@ class ProfilTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'NISN NASIONAL',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                    color:  AppColors.textMuted,
+                                Expanded(
+                                  child: Text(
+                                    'NISN NASIONAL',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textMuted,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                const SizedBox(width: 4),
                                 GestureDetector(
                                   onTap: () => _copyToClipboard(context, user.nisn, 'NISN'),
                                   behavior: HitTestBehavior.opaque,
@@ -720,14 +725,14 @@ class ProfilTab extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: AppColors.surface,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color:  AppColors.textQuaternary),
+                                      border: Border.all(color: AppColors.border),
                                     ),
                                     child: Text(
                                       'Salin',
                                       style: GoogleFonts.inter(
-                                        fontSize: 9,
+                                        fontSize: 9.5,
                                         fontWeight: FontWeight.w700,
-                                        color:  AppColors.primaryBlue,
+                                        color: AppColors.primaryBlue,
                                       ),
                                     ),
                                   ),
@@ -941,12 +946,16 @@ class ProfilTab extends StatelessWidget {
                 children: [
                   const WhatsAppBrandIcon(size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    'Kirim Pesan Uji Coba ke WhatsApp Wali',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color:  AppColors.success,
+                  Flexible(
+                    child: Text(
+                      'Uji Pesan ke WhatsApp Wali',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
                     ),
                   ),
                 ],
@@ -1013,35 +1022,45 @@ class ProfilTab extends StatelessWidget {
                     child: Icon(icon ?? Icons.circle, size: 16, color: iconColor ??  AppColors.primaryBlue),
                   ),
                 const SizedBox(width: 14),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color:  AppColors.primaryDark,
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      value,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: valueColor ??  AppColors.textMuted,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: valueColor ?? AppColors.textMuted,
+                          ),
+                        ),
                       ),
-                    ),
-                    if (onTap != null) ...[
-                      const SizedBox(width: 6),
-                       Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 13,
-                        color: AppColors.textMuted,
-                      ),
+                      if (onTap != null) ...[
+                        const SizedBox(width: 6),
+                        Icon(
+                          CupertinoIcons.chevron_right,
+                          size: 13,
+                          color: AppColors.textMuted,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -1083,16 +1102,20 @@ class ProfilTab extends StatelessWidget {
                   child: Icon(icon, size: 16, color: iconColor),
                 ),
                 const SizedBox(width: 14),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: textColor ??  AppColors.primaryDark,
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: textColor ?? AppColors.primaryDark,
+                    ),
                   ),
                 ),
-                const Spacer(),
-                 Icon(
+                const SizedBox(width: 8),
+                Icon(
                   CupertinoIcons.chevron_right,
                   size: 14,
                   color: AppColors.textMuted,

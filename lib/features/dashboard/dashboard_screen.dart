@@ -170,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!_data!.user.isFaceEnrolled) {
       HapticFeedback.heavyImpact();
       _showToast(
-          ' Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
+          'Wajah belum terdaftar. Silakan rekam biometrik Face ID terlebih dahulu.');
       _openEnrollment();
       return;
     }
@@ -203,18 +203,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _refreshLocation() async {
     if (_data == null || _data!.geofencing == null) return;
     HapticFeedback.mediumImpact();
-    _showToast(' Sedang membaca sensor koordinat GPS...');
+    _showToast('Memperbarui koordinat lokasi...');
     final geoRes = await LocationService.verifyGeofence(
       _data!.geofencing!,
       networkConfig: _data!.network,
     );
+    final maxRadius = _data!.geofencing!.radiusMeters.toInt();
     if (mounted) {
       setState(() => _geofenceResult = geoRes);
       _showToast(geoRes.isInside
           ? (geoRes.verifiedByWifi
-              ? ' Terverifikasi melalui jaringan WiFi resmi sekolah (Aman)'
-              : ' Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)}m dari sekolah (Aman)')
-          : ' Di luar radius: ${geoRes.distanceMeters > 2000 ? '>2km' : '${geoRes.distanceMeters.toStringAsFixed(0)}m'} (Maks 110m)');
+              ? 'Terverifikasi melalui jaringan WiFi resmi sekolah.'
+              : 'Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)} m dari sekolah.')
+          : 'Di luar area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} (Maks ${maxRadius}m).');
     }
   }
 
@@ -243,23 +244,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showPanduanDialog() {
+    final radiusM = _data?.geofencing?.radiusMeters.toInt() ?? 110;
     showCupertinoDialog(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
         title: Text(
-          'Buku Panduan Presensi',
+          'Panduan Presensi',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
         content: Padding(
           padding: const EdgeInsets.only(top: 8.0),
           child: Text(
             'Aturan Resmi Presensi SMKN 1 Beringin:\n\n'
-            '1. Presensi pagi dimulai pukul 06.30 - 07.30 WIB (Tepat Waktu).\n'
-            '2. Setelah pukul 07.30 WIB siswa tercatat TERLAMBAT dan notifikasi otomatis dikirim ke WhatsApp orang tua.\n'
-            '3. Wajib berada dalam radius 110 meter area sekolah saat verifikasi wajah biometrik.\n'
-            '4. Fake GPS / Mock Location dilarang keras dan otomatis ditolak sistem.',
+            '1. Presensi pagi pukul 06.30 - 07.30 WIB tercatat Tepat Waktu.\n'
+            '2. Lewat pukul 07.30 WIB tercatat Terlambat dan notifikasi dikirim otomatis ke WhatsApp orang tua.\n'
+            '3. Wajib berada di area sekolah (radius ${radiusM}m) atau terhubung ke WiFi resmi sekolah.\n'
+            '4. Fake GPS / Mock Location otomatis ditolak oleh sistem.\n'
+            '5. Izin dan Sakit dikelola langsung oleh Orang Tua bersama Wali Kelas.',
             textAlign: TextAlign.left,
-            style: GoogleFonts.inter(fontSize: 12.5, height: 1.4),
+            style: GoogleFonts.inter(fontSize: 12.5, height: 1.45),
           ),
         ),
         actions: [
@@ -311,10 +314,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final overlayStyle = AppColors.isDark
+        ? SystemUiOverlayStyle.light
+        : SystemUiOverlayStyle.dark;
     return Scaffold(
-      backgroundColor: AppColors.background, // Native Slate-50 Canvas
+      backgroundColor: AppColors.background,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark.copyWith(
+        value: overlayStyle.copyWith(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,
         ),
@@ -463,85 +469,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTopBrandHeader() {
+    const tabTitles = ['Beranda', 'Kehadiran', 'Teman Sekelas', 'Profil'];
+    final title = tabTitles[_currentIndex.clamp(0, tabTitles.length - 1)];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.background,
         border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1.0),
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.6),
+            width: 0.6,
+          ),
         ),
       ),
       child: Row(
         children: [
-          // School Logo Container
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+                letterSpacing: -0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           Container(
-            width: 32,
-            height: 32,
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Image.asset(
-              'assets/images/logo.webp',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.school_rounded,
-                color: AppColors.primaryBlue,
-                size: 20,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(
+                color: AppColors.border.withOpacity(0.8),
+                width: 0.8,
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-
-          // School Brand & Portal Siswa
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'SMKN 1 BERINGIN',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primaryDark,
-                  letterSpacing: 0.5,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/logo.webp',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.school_rounded,
+                    color: AppColors.primaryBlue,
+                    size: 15,
+                  ),
                 ),
-              ),
-              Text(
-                'Portal Siswa',
-                style: GoogleFonts.inter(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryBlue,
+                const SizedBox(width: 6),
+                Text(
+                  'SMKN 1 Beringin',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-
-          const SizedBox(width: 8),
-          Container(
-            width: 1,
-            height: 20,
-            color: AppColors.border,
-          ),
-          const SizedBox(width: 8),
-
-          // Kolaborasi Sumut Berkah Logo
-          Image.asset(
-            'assets/images/logo-kolaborasi.webp',
-            height: 22,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-
-          const Spacer(),
-
-          //  Actions Right: hanya logo & brand (panduan/toggle/logout dipindah ke Profil).
         ],
       ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.3, end: 0);
+    );
   }
 
 //  Floating navigation bar
@@ -579,59 +574,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottom: 0,
       child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             padding: EdgeInsets.fromLTRB(
-                16, 8, 16, bottomInset > 0 ? bottomInset + 8 : 16),
+                8, 8, 8, bottomInset > 0 ? bottomInset + 6 : 12),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.96),
+              color:
+                  AppColors.surface.withOpacity(AppColors.isDark ? 0.88 : 0.92),
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border,
-                  width: 1.0,
+                  color: AppColors.border.withOpacity(0.75),
+                  width: 0.6,
                 ),
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_navItems.length, (index) {
                 final item = _navItems[index];
                 final isSelected = _currentIndex == index;
 
-                return GestureDetector(
-                  onTap: () {
-                    if (_currentIndex != index) {
-                      HapticFeedback.selectionClick();
-                      setState(() => _currentIndex = index);
-                    }
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSelected ? item.activeIcon : item.inactiveIcon,
-                          size: 22,
-                          color: isSelected
-                              ? AppColors.primaryBlue
-                              : AppColors.textMuted,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.title,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_currentIndex != index) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _currentIndex = index);
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isSelected ? item.activeIcon : item.inactiveIcon,
+                            size: 22,
                             color: isSelected
                                 ? AppColors.primaryBlue
                                 : AppColors.textMuted,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 3),
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              fontWeight:
+                                  isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.primaryBlue
+                                  : AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -644,135 +642,140 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSkeletonLoading() {
-    final topPadding = MediaQuery.of(context).padding.top;
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Hero Header Shimmer
-          Container(
-            height: 250.0 + topPadding,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primaryDeep, AppColors.primaryDeep],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            padding: EdgeInsets.fromLTRB(18, topPadding + 16, 18, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 160,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.22),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 110,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.14),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // 2. Signature Floating Card Shimmer (Session Card with Map Box)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Transform.translate(
-              offset: const Offset(0, -32),
-              child: Container(
-                padding: const EdgeInsets.all(18),
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadow.withOpacity(0.06),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  color: AppColors.surfaceMuted,
+                  shape: BoxShape.circle,
                 ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          width: 110,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        Container(
-                          width: 80,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
                     Container(
-                      width: 140,
-                      height: 24,
+                      width: 150,
+                      height: 16,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 110,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceMuted.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AppColors.cardDecoration(radius: 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     Container(
-                      width: 200,
+                      width: 110,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                    ),
+                    Container(
+                      width: 72,
                       height: 14,
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // Map Placeholder Container
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: 130,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  height: 152,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  height: 48,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            decoration: AppColors.cardDecoration(radius: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(
+                4,
+                (_) => Column(
+                  children: [
                     Container(
-                      height: 145,
-                      width: double.infinity,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
                         color: AppColors.background,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 44,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(5),
                       ),
                     ),
                   ],
@@ -780,42 +783,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-
-          // 3. Service Badges Row Shimmer
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                  4,
-                  (index) => Column(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 44,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: AppColors.border,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      )),
-            ),
-          ),
         ],
       ),
     )
         .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.55));
+        .shimmer(duration: 1200.ms, color: Colors.white.withOpacity(0.45));
   }
 
   Widget _buildErrorState() {

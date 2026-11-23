@@ -71,64 +71,58 @@ class _TemanTabState extends State<TemanTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          //  1. LIVE CLASS ATTENDANCE RADAR HEADER
+          //  1. LIVE CLASS ATTENDANCE SUMMARY (Overflow-safe Apple inset card)
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color:  AppColors.border, width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color:  AppColors.shadow.withOpacity(0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(18),
+            decoration: AppColors.cardDecoration(radius: 22, elevated: true),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'KEHADIRAN KELAS HARI INI',
-                          style: GoogleFonts.inter(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color:  AppColors.textMuted,
-                            letterSpacing: 0.8,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'KEHADIRAN KELAS HARI INI',
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                              letterSpacing: 0.6,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          user.kelas,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color:  AppColors.primaryDark,
-                            letterSpacing: -0.5,
+                          const SizedBox(height: 3),
+                          Text(
+                            user.kelas,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textMain,
+                              letterSpacing: -0.45,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                       decoration: BoxDecoration(
-                        color:  AppColors.infoBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color:  AppColors.infoBorder),
+                        color: AppColors.infoBg,
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                           Icon(
+                          Icon(
                             CupertinoIcons.person_2_fill,
-                            size: 15,
+                            size: 14,
                             color: AppColors.primaryBlue,
                           ),
                           const SizedBox(width: 5),
@@ -136,8 +130,8 @@ class _TemanTabState extends State<TemanTab> {
                             '${classmates.length} Siswa',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color:  AppColors.primaryBlue,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryBlue,
                             ),
                           ),
                         ],
@@ -158,12 +152,12 @@ class _TemanTabState extends State<TemanTab> {
                         if (hadirCount > 0)
                           Expanded(
                             flex: hadirCount,
-                            child: Container(color:  AppColors.success),
+                            child: Container(color: AppColors.success),
                           ),
                         if (belumCount > 0)
                           Expanded(
                             flex: belumCount,
-                            child: Container(color:  AppColors.border),
+                            child: Container(color: AppColors.surfaceMuted),
                           ),
                       ],
                     ),
@@ -173,35 +167,41 @@ class _TemanTabState extends State<TemanTab> {
                 const SizedBox(height: 12),
 
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration:  BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.success,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$hadirCount Hadir di Sekolah (${(attendanceRatio * 100).toInt()}%)',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color:  AppColors.success,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '$hadirCount Hadir (${(attendanceRatio * 100).toInt()}%)',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.success,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
-                      '$belumCount Belum Hadir',
+                      '$belumCount Belum',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color:  AppColors.textMuted,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -261,21 +261,26 @@ class _TemanTabState extends State<TemanTab> {
 
           const SizedBox(height: 12),
 
-          //  3. Filter chips (full-width mobile layout)
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterChip('Semua (${classmates.length})', 'Semua'),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFilterChip('Hadir ($hadirCount)', 'Hadir'),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFilterChip('Belum Hadir ($belumCount)', 'Belum Hadir'),
-              ),
-            ],
+          //  3. iOS Segmented Filter Control
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildFilterChip('Semua (${classmates.length})', 'Semua'),
+                ),
+                Expanded(
+                  child: _buildFilterChip('Hadir ($hadirCount)', 'Hadir'),
+                ),
+                Expanded(
+                  child: _buildFilterChip('Belum ($belumCount)', 'Belum Hadir'),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -434,12 +439,12 @@ class _TemanTabState extends State<TemanTab> {
                               isHadir
                                   ? (cm.jamAbsen != null && cm.jamAbsen!.isNotEmpty
                                       ? 'Hadir ${cm.jamAbsen}'
-                                      : 'Hadir ')
+                                      : 'Hadir')
                                   : 'Belum Hadir',
                               style: GoogleFonts.inter(
-                                fontSize: 10,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
-                                color: isHadir ?  AppColors.success :  AppColors.textMuted,
+                                color: isHadir ? AppColors.success : AppColors.textMuted,
                               ),
                             ),
                           ),
@@ -464,22 +469,18 @@ class _TemanTabState extends State<TemanTab> {
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ?  AppColors.primaryBlue : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ?  AppColors.primaryBlue :  AppColors.border,
-            width: 1.0,
-          ),
+          color: isSelected ? AppColors.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(9.5),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color:  AppColors.primaryBlue.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ]
               : null,
@@ -488,10 +489,11 @@ class _TemanTabState extends State<TemanTab> {
           label,
           textAlign: TextAlign.center,
           maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
             fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white :  AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppColors.textMain : AppColors.textSecondary,
           ),
         ),
       ),

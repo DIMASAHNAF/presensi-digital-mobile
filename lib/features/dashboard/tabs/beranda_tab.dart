@@ -52,60 +52,21 @@ class BerandaTab extends StatefulWidget {
 }
 
 class _BerandaTabState extends State<BerandaTab>
-    with TickerProviderStateMixin {
-  late AnimationController _jumpController;
-  late Animation<double> _jumpAnimation;
-  late Animation<double> _shadowScaleAnimation;
-  late Animation<double> _shadowOpacityAnimation;
-
+    with SingleTickerProviderStateMixin {
   late AnimationController _rippleController;
 
   @override
   void initState() {
     super.initState();
-    // Animasi lompat-lompat berulang (bouncing pin jump)
-    _jumpController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    )..repeat(reverse: true);
-
-    // Perpindahan vertikal (naik 24px lalu turun kembali secara ritmis)
-    _jumpAnimation = Tween<double>(begin: 0.0, end: -24.0).animate(
-      CurvedAnimation(
-        parent: _jumpController,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      ),
-    );
-
-    // Bayangan di tanah mengecil saat pin terangkat ke udara
-    _shadowScaleAnimation = Tween<double>(begin: 1.0, end: 0.35).animate(
-      CurvedAnimation(
-        parent: _jumpController,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      ),
-    );
-
-    // Bayangan di tanah memudar saat pin semakin tinggi
-    _shadowOpacityAnimation = Tween<double>(begin: 0.45, end: 0.08).animate(
-      CurvedAnimation(
-        parent: _jumpController,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      ),
-    );
-
-    // Animasi gelombang radar pulsa continuous
+    // Subtle Apple Maps-style beacon halo
     _rippleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2200),
     )..repeat();
   }
 
   @override
   void dispose() {
-    _jumpController.dispose();
     _rippleController.dispose();
     super.dispose();
   }
@@ -206,150 +167,126 @@ class _BerandaTabState extends State<BerandaTab>
     final avatarUrl = _formatAvatarUrl(user.avatar);
     final namaClean = _toTitleCase(user.nama);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color:  AppColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color:  AppColors.shadow.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
       child: Row(
         children: [
-          // Kiri: Avatar bulat dengan status ring (Tap to edit)
+          // Avatar (Tap to edit profile)
           GestureDetector(
             onTap: _openEditProfile,
             behavior: HitTestBehavior.opaque,
             child: Stack(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:  AppColors.background,
-                  border: Border.all(color:  AppColors.border),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(100),
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  child: avatarUrl.isNotEmpty
-                      ? Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surface,
+                    border: Border.all(
+                      color: AppColors.border.withOpacity(0.9),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: avatarUrl.isNotEmpty
+                        ? Image.network(
+                            avatarUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                _getInitials(user.nama),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryBlue,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
                             child: Text(
                               _getInitials(user.nama),
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color:  AppColors.primaryBlue,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryBlue,
                               ),
                             ),
                           ),
-                        )
-                      : Center(
-                          child: Text(
-                            _getInitials(user.nama),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color:  AppColors.primaryBlue,
-                            ),
-                          ),
-                        ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: user.isFaceEnrolled
-                        ?  AppColors.success
-                        :  AppColors.warning,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: user.isFaceEnrolled
+                          ? AppColors.success
+                          : AppColors.warning,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.background, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
 
           const SizedBox(width: 12),
 
-          // Tengah: Nama & Kelas
+          // Greeting & class subtitle (overflow-safe)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  'Halo, $namaClean',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
+                    letterSpacing: -0.35,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Flexible(
                       child: Text(
-                        'Halo, $namaClean ',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color:  AppColors.primaryDark,
-                          letterSpacing: -0.2,
+                        user.kelas,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMuted,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      user.kelas,
-                      style: GoogleFonts.inter(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color:  AppColors.textMuted,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textQuaternary,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration:  BoxDecoration(
-                        color: AppColors.textQuaternary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: user.isFaceEnrolled
-                            ?  AppColors.success
-                            :  AppColors.warning,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
                     Text(
                       user.isFaceEnrolled ? 'Face ID Aktif' : 'Belum Rekam',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: user.isFaceEnrolled
-                            ?  AppColors.success
-                            :  AppColors.warning,
+                            ? AppColors.success
+                            : AppColors.warning,
                       ),
                     ),
                   ],
@@ -358,28 +295,9 @@ class _BerandaTabState extends State<BerandaTab>
             ),
           ),
 
-          // Kanan: Logo Sekolah Ringkas
-          Container(
-            width: 36,
-            height: 36,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color:  AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color:  AppColors.border),
-            ),
-            child: Image.asset(
-              'assets/images/logo.webp',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) =>  Icon(
-                Icons.school_rounded,
-                size: 20,
-                color: AppColors.primaryBlue,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // C14. Tombol notifikasi (kotak masuk).
+          const SizedBox(width: 10),
+
+          // Clean circular iOS Notification button
           _NotificationBell(
             onTap: () {
               HapticFeedback.lightImpact();
@@ -408,18 +326,7 @@ class _BerandaTabState extends State<BerandaTab>
     final tglStr = '${hari[now.weekday - 1]}, ${now.day} ${bulan[now.month - 1]} ${now.year}';
 
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color:  AppColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color:  AppColors.shadow.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: AppColors.cardDecoration(radius: 22, elevated: true),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -429,83 +336,83 @@ class _BerandaTabState extends State<BerandaTab>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                    decoration: BoxDecoration(
-                      color: hasSesi
-                          ? (sudahHadir
-                              ?  AppColors.successBg
-                              :  AppColors.infoBg)
-                          :  AppColors.background,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                      decoration: BoxDecoration(
                         color: hasSesi
-                            ? (sudahHadir
-                                ?  AppColors.successBorder
-                                :  AppColors.infoBorder)
-                            :  AppColors.border,
+                            ? (sudahHadir ? AppColors.successBg : AppColors.infoBg)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: hasSesi
+                                  ? (sudahHadir
+                                      ? AppColors.success
+                                      : AppColors.primaryBlue)
+                                  : AppColors.textMuted,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              hasSesi
+                                  ? (sudahHadir ? 'Presensi Selesai' : 'Sesi Aktif')
+                                  : 'Belum Ada Sesi',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: hasSesi
+                                    ? (sudahHadir
+                                        ? AppColors.success
+                                        : AppColors.primaryBlue)
+                                    : AppColors.textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: hasSesi
-                                ? (sudahHadir
-                                    ?  AppColors.success
-                                    :  AppColors.primaryBlue)
-                                :  AppColors.textMuted,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          hasSesi
-                              ? (sudahHadir
-                                  ? 'Sesi Sedang Berlangsung'
-                                  : 'Sesi Presensi Aktif')
-                              : 'Tidak Ada Sesi Aktif',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: hasSesi
-                                ? (sudahHadir
-                                    ?  AppColors.success
-                                    :  AppColors.primaryBlue)
-                                :  AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      user.kelas,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textMain,
+                        letterSpacing: -0.4,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    user.kelas,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color:  AppColors.primaryDark,
-                      letterSpacing: -0.3,
+                    const SizedBox(height: 2),
+                    Text(
+                      tglStr,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    tglStr,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color:  AppColors.textMuted,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              // C15. Jam WIB realtime + hitung mundur sesi.
+              const SizedBox(width: 10),
+              // Jam WIB realtime + hitung mundur sesi.
               _SessionClock(
                 nowLabel: widget.currentTimeWIB,
                 jamSelesai: sesi?.jamSelesai,
@@ -570,27 +477,26 @@ class _BerandaTabState extends State<BerandaTab>
             ),
           ] else if (sudahHadir) ...[
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 13),
+              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
               decoration: BoxDecoration(
-                color:  AppColors.successBg,
+                color: AppColors.successBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color:  AppColors.successBorder),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(
+                  Icon(
                     CupertinoIcons.checkmark_seal_fill,
                     size: 18,
                     color: AppColors.success,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Sudah Presensi Hari Ini ',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color:  AppColors.success,
+                    'Sudah Presensi Hari Ini',
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.success,
                     ),
                   ),
                 ],
@@ -600,24 +506,15 @@ class _BerandaTabState extends State<BerandaTab>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color:  AppColors.warningBg,
+                color: AppColors.warningBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color:  AppColors.warningBorder),
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color:  AppColors.warningBorder,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child:  Icon(
-                      CupertinoIcons.exclamationmark_triangle_fill,
-                      color: AppColors.warning,
-                      size: 16,
-                    ),
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle_fill,
+                    color: AppColors.warning,
+                    size: 18,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -626,20 +523,19 @@ class _BerandaTabState extends State<BerandaTab>
                       children: [
                         Text(
                           'Wajib Rekam Wajah Terlebih Dahulu',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color:  AppColors.amberDeep,
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.amberDeep,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Biometrik wajah belum terdaftar. Rekam wajah sekali untuk mulai presensi.',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color:  AppColors.amberDeep,
-                            height: 1.3,
+                          'Rekam biometrik wajah sekali untuk mulai presensi.',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: AppColors.amberDeep,
+                            height: 1.35,
                           ),
                         ),
                       ],
@@ -649,38 +545,28 @@ class _BerandaTabState extends State<BerandaTab>
               ),
             ),
             const SizedBox(height: 10),
-            GestureDetector(
-              onTap: widget.onOpenEnrollment ?? widget.onOpenScanner,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                decoration: BoxDecoration(
-                  color:  AppColors.warning,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color:  AppColors.warning.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+            SizedBox(
+              height: 48,
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                color: AppColors.warning,
+                borderRadius: BorderRadius.circular(14),
+                onPressed: widget.onOpenEnrollment ?? widget.onOpenScanner,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      CupertinoIcons.camera_fill,
+                      CupertinoIcons.viewfinder,
                       size: 18,
                       color: Colors.white,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Rekam Wajah Sekarang →',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
+                      'Rekam Wajah Sekarang',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
-                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
@@ -688,38 +574,28 @@ class _BerandaTabState extends State<BerandaTab>
               ),
             ),
           ] else ...[
-            GestureDetector(
-              onTap: widget.onOpenScanner,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                decoration: BoxDecoration(
-                  color:  AppColors.primaryBlue,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color:  AppColors.primaryBlue.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+            SizedBox(
+              height: 48,
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                color: AppColors.primaryBlue,
+                borderRadius: BorderRadius.circular(14),
+                onPressed: widget.onOpenScanner,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      CupertinoIcons.camera_fill,
+                      CupertinoIcons.viewfinder,
                       size: 18,
                       color: Colors.white,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Buka Kamera & Scan Wajah',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
+                      'Scan Wajah Presensi',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
-                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
@@ -732,18 +608,20 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  //  2B. WIDGET PETA DENGAN ANIMASI PULSING RADAR
+  //  2B. WIDGET PETA (Apple Maps-inspired calm beacon)
 
   Widget _buildMapWidget() {
+    final radiusM = widget.data.geofencing?.radiusMeters.toInt() ?? 110;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        height: 148,
+        height: 152,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Background Visual Peta Kampus
+            // Campus map backdrop with subtle dark-mode dimming
             Image.asset(
               'assets/images/map_campus_v2.png',
               fit: BoxFit.cover,
@@ -752,179 +630,98 @@ class _BerandaTabState extends State<BerandaTab>
                 fit: BoxFit.cover,
               ),
             ),
+            if (AppColors.isDark)
+              Container(color: Colors.black.withOpacity(0.42)),
 
-            // Pin Marker Sekolah di Tengah Peta dengan Animasi Lompat-Lompat & Radar Pulse
+            // Calm Apple Maps pulsing beacon at center
             Center(
               child: SizedBox(
-                width: 140,
-                height: 140,
+                width: 112,
+                height: 112,
                 child: Stack(
                   alignment: Alignment.center,
-                  clipBehavior: Clip.none,
                   children: [
-                    // 1. Dual Radar Ripple Waves (Mekar Melebar Halus 60fps)
                     AnimatedBuilder(
                       animation: _rippleController,
                       builder: (context, _) {
-                        final p1 = _rippleController.value;
-                        final p2 = (_rippleController.value + 0.5) % 1.0;
-
-                        final scale1 = 0.6 + (p1 * 2.0); // 0.6 to 2.6
-                        final opacity1 = (1.0 - p1).clamp(0.0, 1.0) * 0.45;
-
-                        final scale2 = 0.6 + (p2 * 2.0); // 0.6 to 2.6
-                        final opacity2 = (1.0 - p2).clamp(0.0, 1.0) * 0.35;
-
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Transform.scale(
-                              scale: scale1,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:  AppColors.primaryBlue.withOpacity(opacity1 * 0.35),
-                                  border: Border.all(
-                                    color:  AppColors.primaryBlue.withOpacity(opacity1),
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Transform.scale(
-                              scale: scale2,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:  AppColors.primaryBlue.withOpacity(opacity2 * 0.35),
-                                  border: Border.all(
-                                    color:  AppColors.primaryBlue.withOpacity(opacity2),
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    // 2. Bayangan Kontak di Tanah (Mengecil & Memudar saat Pin Melompat)
-                    AnimatedBuilder(
-                      animation: _jumpController,
-                      builder: (context, _) {
-                        return Transform.translate(
-                          offset: const Offset(0, 18),
-                          child: Transform.scale(
-                            scaleX: _shadowScaleAnimation.value,
-                            scaleY: _shadowScaleAnimation.value * 0.65,
-                            child: Container(
-                              width: 26,
-                              height: 9,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
-                                borderRadius: const BorderRadius.all(Radius.elliptical(26, 9)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(_shadowOpacityAnimation.value),
-                                    blurRadius: 4,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
+                        final p = _rippleController.value;
+                        final scale = 0.55 + (p * 1.45);
+                        final opacity = (1.0 - p).clamp(0.0, 1.0) * 0.32;
+                        return Transform.scale(
+                          scale: scale,
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryBlue.withOpacity(opacity),
+                              border: Border.all(
+                                color: AppColors.primaryBlue
+                                    .withOpacity(opacity * 1.4),
+                                width: 1.2,
                               ),
                             ),
                           ),
                         );
                       },
                     ),
-
-                    // 3. Pin Sekolah yang Lompat-Lompat Naik Turun (Bouncing Pin Icon)
-                    AnimatedBuilder(
-                      animation: _jumpController,
-                      builder: (context, _) {
-                        return Transform.translate(
-                          offset: Offset(0, _jumpAnimation.value),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  gradient:  LinearGradient(
-                                    colors: [AppColors.primaryBlue,  AppColors.primaryBlue],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2.5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:  AppColors.primaryBlue.withOpacity(0.55),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.school_rounded,
-                                  size: 17,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              CustomPaint(
-                                size: const Size(8, 4),
-                                painter: _PinArrowPainter(),
-                              ),
-                            ],
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                        );
-                      },
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.school_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Floating Badge Atas-Tengah: Status Geofence Valid / Warning
+            // Top-center live geofence/WiFi pill
             Positioned(
               top: 10,
-              left: 0,
-              right: 0,
+              left: 12,
+              right: 12,
               child: Center(
                 child: _buildMapStatusBadge(),
               ),
             ),
 
-            // Floating Badge Kiri-Bawah: Info Radius Sekolah
+            // Bottom-left school radius pill (dynamic, zero mojibake)
             Positioned(
               bottom: 10,
               left: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.65),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
-                    width: 0.8,
-                  ),
+                  color: Colors.black.withOpacity(0.62),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       CupertinoIcons.shield_fill,
-                      size: 12,
+                      size: 11,
                       color: AppColors.success,
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      'SMKN 1 Beringin • Radius 110m',
+                      'SMKN 1 Beringin • ${radiusM}m',
                       style: GoogleFonts.inter(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
@@ -936,11 +733,11 @@ class _BerandaTabState extends State<BerandaTab>
               ),
             ),
 
-            // Floating Button Kanan-Bawah: Refresh Lokasi GPS
+            // Bottom-right circular locate button
             if (widget.onRefreshLocation != null)
               Positioned(
-                bottom: 8,
-                right: 8,
+                bottom: 10,
+                right: 10,
                 child: GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
@@ -948,19 +745,20 @@ class _BerandaTabState extends State<BerandaTab>
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.surface.withOpacity(0.95),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 6,
+                          color: Colors.black.withOpacity(0.14),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child:  Icon(
+                    child: Icon(
                       CupertinoIcons.location_fill,
                       size: 16,
                       color: AppColors.primaryBlue,
@@ -1089,34 +887,39 @@ class _BerandaTabState extends State<BerandaTab>
     }
 
     if (geo.isInside) {
+      final label = geo.verifiedByWifi
+          ? 'WiFi Sekolah • Valid'
+          : 'Area Valid • ${geo.distanceMeters.toStringAsFixed(0)}m';
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
           color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color:  AppColors.successBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-             Icon(
-              CupertinoIcons.checkmark_alt_circle_fill,
-              size: 11,
+            Icon(
+              geo.verifiedByWifi
+                  ? CupertinoIcons.wifi
+                  : CupertinoIcons.checkmark_alt_circle_fill,
+              size: 12,
               color: AppColors.success,
             ),
             const SizedBox(width: 5),
             Text(
-              'Area Valid • ${geo.distanceMeters.toStringAsFixed(0)}m',
+              label,
               style: GoogleFonts.inter(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color:  AppColors.success,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.success,
               ),
             ),
           ],
@@ -1159,61 +962,57 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  //  3. 4-COLUMN QUICK ACTION BAR (Sesuai Desain Asli)
+  //  3. 4-COLUMN QUICK ACTION BAR (Zero Izin button, balanced Apple squircles)
 
   Widget _buildQuickActionBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color:  AppColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color:  AppColors.shadow.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+      decoration: AppColors.cardDecoration(radius: 20),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildQuickActionItem(
-            icon: CupertinoIcons.calendar_today,
-            label: 'Kehadiran',
-            bgColor:  AppColors.infoBg, // soft blue-50
-            iconColor:  AppColors.primaryBlue, // blue-600
-            onTap: widget.onOpenKehadiran,
+          Expanded(
+            child: _buildQuickActionItem(
+              icon: CupertinoIcons.calendar_today,
+              label: 'Kehadiran',
+              bgColor: AppColors.primaryBlue.withOpacity(0.11),
+              iconColor: AppColors.primaryBlue,
+              onTap: widget.onOpenKehadiran,
+            ),
           ),
-          _buildQuickActionItem(
-            icon: CupertinoIcons.person_2_fill,
-            label: 'Teman',
-            bgColor:  AppColors.indigoBg, // soft indigo-50
-            iconColor:  AppColors.primaryIndigo, // indigo-600
-            onTap: widget.onOpenTeman,
+          Expanded(
+            child: _buildQuickActionItem(
+              icon: CupertinoIcons.person_2_fill,
+              label: 'Teman',
+              bgColor: AppColors.primaryIndigo.withOpacity(0.11),
+              iconColor: AppColors.primaryIndigo,
+              onTap: widget.onOpenTeman,
+            ),
           ),
-          _buildQuickActionItem(
-            icon: CupertinoIcons.location_solid,
-            label: 'Cek Lokasi',
-            bgColor:  AppColors.successBg, // soft emerald-50
-            iconColor:  AppColors.success, // emerald-600
-            onTap: () {
-              if (widget.onRefreshLocation != null) {
-                widget.onRefreshLocation!();
-              }
-            },
+          Expanded(
+            child: _buildQuickActionItem(
+              icon: CupertinoIcons.location_solid,
+              label: 'Cek Lokasi',
+              bgColor: AppColors.success.withOpacity(0.12),
+              iconColor: AppColors.success,
+              onTap: () {
+                if (widget.onRefreshLocation != null) {
+                  widget.onRefreshLocation!();
+                }
+              },
+            ),
           ),
-          _buildQuickActionItem(
-            icon: CupertinoIcons.book_fill,
-            label: 'Panduan',
-            bgColor:  AppColors.warningBg, // soft amber-50
-            iconColor:  AppColors.warning, // amber-600
-            onTap: () {
-              if (widget.onOpenPanduan != null) {
-                widget.onOpenPanduan!();
-              }
-            },
+          Expanded(
+            child: _buildQuickActionItem(
+              icon: CupertinoIcons.book_fill,
+              label: 'Panduan',
+              bgColor: AppColors.warning.withOpacity(0.12),
+              iconColor: AppColors.warning,
+              onTap: () {
+                if (widget.onOpenPanduan != null) {
+                  widget.onOpenPanduan!();
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -1237,21 +1036,23 @@ class _BerandaTabState extends State<BerandaTab>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 21, color: iconColor),
+            child: Icon(icon, size: 20, color: iconColor),
           ),
           const SizedBox(height: 7),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: 11.5,
               fontWeight: FontWeight.w500,
-              color:  AppColors.textSecondary,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -1526,33 +1327,12 @@ class _BerandaTabState extends State<BerandaTab>
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           fontWeight: FontWeight.w800,
-          color:  AppColors.primaryBlue,
+          color: AppColors.primaryBlue,
         ),
       ),
     );
   }
 }
-
-class _PinArrowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color =  AppColors.primaryBlue
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 
 /// C14. Lonceng notifikasi dengan titik indikator.
 class _NotificationBell extends StatefulWidget {
@@ -1590,17 +1370,20 @@ class _NotificationBellState extends State<_NotificationBell> {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.border.withOpacity(0.8),
+                width: 0.8,
+              ),
             ),
-            child:  Icon(
-              CupertinoIcons.bell_fill,
+            child: Icon(
+              CupertinoIcons.bell,
               size: 18,
-              color: AppColors.primaryBlue,
+              color: AppColors.textMain,
             ),
           ),
           if (_unread > 0)

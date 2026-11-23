@@ -123,92 +123,54 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
     final items = _getScheduleForDay(_selectedDayIndex);
 
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color:  AppColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color:  AppColors.shadow.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: AppColors.cardDecoration(radius: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //  Header Title & Class Tag
+          // Header Title & Class Tag (overflow-safe)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color:  AppColors.infoBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color:  AppColors.infoBorder),
-                    ),
-                    child:  Icon(
-                      Icons.calendar_month_rounded,
-                      size: 17,
-                      color: AppColors.primaryBlue,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'JADWAL PELAJARAN',
-                        style: GoogleFonts.inter(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                          color:  AppColors.textMuted,
-                        ),
-                      ),
-                      Text(
-                        'Roster Kelas',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color:  AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color:  AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color:  AppColors.textQuaternary),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     Icon(
-                      Icons.school_rounded,
-                      size: 12,
-                      color: AppColors.primaryBlue,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      widget.namaKelas,
+                      'Jadwal Pelajaran',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color:  AppColors.primaryDark,
+                        color: AppColors.textMain,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Roster kelas aktif',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  widget.namaKelas,
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryBlue,
+                  ),
                 ),
               ),
             ],
@@ -374,30 +336,23 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isActive ?  AppColors.successBg : AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  color: isActive ? AppColors.successBg : AppColors.background,
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isActive ?  AppColors.successBorder :  AppColors.border,
-                    width: isActive ? 1.5 : 1.0,
+                    color: isActive
+                        ? AppColors.successBorder
+                        : AppColors.border.withOpacity(0.55),
+                    width: isActive ? 1.2 : 0.8,
                   ),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color:  AppColors.success.withOpacity(0.12),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Row(
                   children: [
                     // Time and Les badge
                     Container(
-                      width: 90,
+                      width: 88,
                       padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 6),
                       decoration: BoxDecoration(
-                        color: isActive ?  AppColors.successBg :  AppColors.background,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -406,8 +361,10 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                             it.lesLabel,
                             style: GoogleFonts.inter(
                               fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              color: isActive ?  AppColors.success :  AppColors.textMuted,
+                              fontWeight: FontWeight.w700,
+                              color: isActive
+                                  ? AppColors.success
+                                  : AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 1),
@@ -417,7 +374,9 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: isActive ?  AppColors.success :  AppColors.primaryDark,
+                              color: isActive
+                                  ? AppColors.success
+                                  : AppColors.textMain,
                             ),
                           ),
                         ],
@@ -437,9 +396,11 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                 child: Text(
                                   it.mapel,
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: isActive ?  AppColors.success :  AppColors.primaryDark,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isActive
+                                        ? AppColors.success
+                                        : AppColors.textMain,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -448,16 +409,17 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                               if (isActive)
                                 Container(
                                   margin: const EdgeInsets.only(left: 6),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color:  AppColors.success,
+                                    color: AppColors.success,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    'AKTIF',
+                                    'Aktif',
                                     style: GoogleFonts.inter(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                     ),
                                   ),
@@ -465,18 +427,18 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                               else if (widget.sudahHadir && isTodaySelected)
                                 Container(
                                   margin: const EdgeInsets.only(left: 6),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color:  AppColors.successBg,
+                                    color: AppColors.successBg,
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color:  AppColors.successBorder),
                                   ),
                                   child: Text(
-                                    'Otomatis Hadir ',
+                                    'Hadir',
                                     style: GoogleFonts.inter(
-                                      fontSize: 9,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w700,
-                                      color:  AppColors.success,
+                                      color: AppColors.success,
                                     ),
                                   ),
                                 ),
@@ -485,7 +447,7 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                               Icon(
+                              Icon(
                                 Icons.person_outline_rounded,
                                 size: 12,
                                 color: AppColors.textMuted,
@@ -495,8 +457,8 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                                 child: Text(
                                   it.guru,
                                   style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color:  AppColors.textMuted,
+                                    fontSize: 11.5,
+                                    color: AppColors.textMuted,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -508,17 +470,21 @@ class _JadwalPelajaranWidgetState extends State<JadwalPelajaranWidget> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                               Icon(
+                              Icon(
                                 Icons.meeting_room_outlined,
                                 size: 12,
                                 color: AppColors.textMuted,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                it.ruangan,
-                                style: GoogleFonts.inter(
-                                  fontSize: 10.5,
-                                  color:  AppColors.textMuted,
+                              Expanded(
+                                child: Text(
+                                  it.ruangan,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],

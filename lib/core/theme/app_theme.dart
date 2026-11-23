@@ -199,6 +199,51 @@ class AppColors {
   static Color get amberDeep => _p.amberDeep;
   static Color get waGreen => _p.waGreen;
 
+  /// Hairline subtle iOS grouped card decoration (clean surface, whisper border, minimal shadow).
+  static BoxDecoration cardDecoration({
+    double radius = 20,
+    Color? color,
+    Color? borderColor,
+    bool elevated = false,
+  }) {
+    return BoxDecoration(
+      color: color ?? surface,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: borderColor ?? (isDark ? border : border.withOpacity(0.75)),
+        width: 0.8,
+      ),
+      boxShadow: isDark
+          ? null
+          : [
+              BoxShadow(
+                color: Colors.black.withOpacity(elevated ? 0.045 : 0.025),
+                blurRadius: elevated ? 16 : 10,
+                offset: Offset(0, elevated ? 4 : 2),
+              ),
+            ],
+    );
+  }
+
+  /// Semantic standing color for attendance percentage (never green when < 75%).
+  static Color attendanceStatusColor(int percentage) {
+    if (percentage >= 75) return success;
+    if (percentage >= 60) return warning;
+    return danger;
+  }
+
+  static Color attendanceStatusBg(int percentage) {
+    if (percentage >= 75) return successBg;
+    if (percentage >= 60) return warningBg;
+    return dangerBg;
+  }
+
+  static Color attendanceStatusBorder(int percentage) {
+    if (percentage >= 75) return successBorder;
+    if (percentage >= 60) return warningBorder;
+    return dangerBorder;
+  }
+
   static LinearGradient get appleCardGradient => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

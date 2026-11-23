@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: Colors.black,
+                        color: AppColors.textMain,
                         letterSpacing: -0.6,
                       ),
                     )
@@ -274,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: AppColors.textMain,
                             ),
                             decoration: InputDecoration(
                               hintText: 'NISN atau Username Siswa',
@@ -313,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: AppColors.textMain,
                             ),
                             decoration: InputDecoration(
                               hintText: 'Kata Sandi (Kosongkan jika login perdana)',

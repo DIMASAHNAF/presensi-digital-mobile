@@ -23,7 +23,7 @@ class TelemetryService {
     }
   }
 
-  /// Kirim satu peristiwa. Tidak pernah melempar â€” telemetry tak boleh
+  /// Kirim satu peristiwa. Tidak pernah melempar — telemetry tak boleh
   /// merusak alur aplikasi.
   static Future<void> send({
     required String kind, // 'error' | 'event'

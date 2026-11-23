@@ -78,64 +78,57 @@ class _KehadiranTabState extends State<KehadiranTab> {
           //  1. APPLE HEALTH STAT CARD
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color:  AppColors.border, width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color:  AppColors.shadow.withOpacity(0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            decoration: AppColors.cardDecoration(radius: 22, elevated: true),
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'TOTAL KEHADIRAN SISWA',
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color:  AppColors.textMuted,
-                        letterSpacing: 0.8,
+                    Expanded(
+                      child: Text(
+                        'RINGKASAN KEHADIRAN',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.6,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       widget.data.user.kelas,
                       style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color:  AppColors.primaryBlue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryBlue,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       '${stats.persentase}%',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: stats.persentase >= 75
-                            ?  AppColors.success
-                            :  AppColors.danger,
-                        letterSpacing: -1,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.attendanceStatusColor(stats.persentase),
+                        letterSpacing: -1.2,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        'Rasio kehadiran terverifikasi untuk seluruh sesi belajar aktif semester ini.',
+                        'Rasio kehadiran terverifikasi pada sesi belajar aktif semester ini.',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color:  AppColors.textMuted,
-                          height: 1.35,
+                          fontSize: 12.5,
+                          color: AppColors.textMuted,
+                          height: 1.4,
                         ),
                       ),
                     ),
@@ -212,19 +205,19 @@ class _KehadiranTabState extends State<KehadiranTab> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                         Icon(
-                          CupertinoIcons.doc_text_search,
-                          size: 15,
-                          color: AppColors.primaryBlue,
-                        ),
-                        const SizedBox(width: 7),
                         Text(
-                          'Lihat Rekap Lengkap Presensi →',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color:  AppColors.primaryBlue,
+                          'Lihat Rekap Lengkap',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryBlue,
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          CupertinoIcons.chevron_right,
+                          size: 13,
+                          color: AppColors.primaryBlue,
                         ),
                       ],
                     ),
@@ -631,108 +624,111 @@ class _KehadiranTabState extends State<KehadiranTab> {
     );
   }
 
-  //  2. DAPODIK SAFETY GAUGE CARD
+  //  2. DAPODIK SAFETY CARD (Clean Apple Health inset card, zero overflow)
 
   Widget _buildDapodikSafetyCard(StatsModel stats) {
     final isSafe = stats.persentase >= 75;
-    // Calculate tolerance days: 25% of 60 days semester ~ 15 days max absence
     final totalAbsence = stats.izin + stats.sakit + stats.alpa;
-    final maxAllowed = (stats.total > 0 ? (stats.total * 0.25).toInt() : 5);
+    final maxAllowed = stats.total > 0 ? (stats.total * 0.25).toInt() : 5;
     final remainingTolerance = (maxAllowed - totalAbsence).clamp(0, 30);
 
+    final accentColor = isSafe ? AppColors.success : AppColors.danger;
+    final badgeBg = isSafe ? AppColors.successBg : AppColors.dangerBg;
+
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isSafe ?  AppColors.successBg :  AppColors.dangerBg,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isSafe ?  AppColors.successBorder :  AppColors.dangerBg,
-          width: 1.0,
-        ),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: AppColors.cardDecoration(radius: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    isSafe ? Icons.verified_user_rounded : Icons.warning_amber_rounded,
-                    size: 18,
-                    color: isSafe ?  AppColors.success :  AppColors.danger,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'STANDAR MINIMAL DAPODIK (75%)',
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: isSafe ?  AppColors.success :  AppColors.danger,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
-                  color: isSafe ?  AppColors.successBg :  AppColors.dangerBg,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isSafe ?  AppColors.successBorder :  AppColors.dangerBorder,
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  isSafe
+                      ? CupertinoIcons.checkmark_shield_fill
+                      : CupertinoIcons.exclamationmark_triangle_fill,
+                  size: 16,
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Standar Dapodik 75%',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMain,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
-                  isSafe ? 'STATUS AMAN ' : 'BATAS RAWAN ',
+                  isSafe ? 'Aman' : 'Perlu Perhatian',
                   style: GoogleFonts.inter(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    color: isSafe ?  AppColors.success :  AppColors.danger,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: accentColor,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             isSafe
-                ? 'Tingkat kehadiranmu aman untuk mengikuti Penilaian Akhir Semester (PAS). Pertahankan disiplin kehadiran pagimu!'
-                : 'Perhatian: Kehadiranmu berada di bawah batas minimum 75% Dapodik. Segera penuhi kehadiran di sesi berikutnya agar memenuhi syarat ujian.',
+                ? 'Kehadiranmu memenuhi syarat minimal Penilaian Akhir Semester (PAS). Pertahankan kedisiplinan pagi.'
+                : 'Kehadiranmu di bawah batas minimum 75% Dapodik. Penuhi sesi berikutnya agar memenuhi syarat ujian.',
             style: GoogleFonts.inter(
-              fontSize: 12,
-              color: isSafe ?  AppColors.success :  AppColors.danger,
-              height: 1.35,
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
+              height: 1.45,
             ),
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSafe ?  AppColors.successBorder :  AppColors.dangerBg,
-              ),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Sisa Toleransi Izin/Sakit Semester Ini:',
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color:  AppColors.textSecondary,
+                Expanded(
+                  child: Text(
+                    'Sisa toleransi ketidakhadiran',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 10),
                 Text(
-                  '$remainingTolerance Hari Lagi',
+                  '$remainingTolerance hari',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: isSafe ?  AppColors.success :  AppColors.danger,
+                    color: accentColor,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
@@ -767,67 +763,44 @@ class _KehadiranTabState extends State<KehadiranTab> {
     }
 
     final now = DateTime.now();
-    final daysInMonth = calendar?.daysInMonth ?? now.day;
+    final year = calendar?.year ?? now.year;
+    final month = calendar?.month ?? now.month;
+    final daysInMonth = calendar?.daysInMonth ?? DateTime(year, month + 1, 0).day;
     final currentDay = calendar?.todayDay ?? now.day;
-    final monthLabel = calendar != null
-        ? DateFormat('MMMM yyyy', 'id_ID')
-            .format(DateTime(calendar.year, calendar.month))
-        : DateFormat('MMMM yyyy', 'id_ID').format(now);
+    final monthLabel = DateFormat('MMMM yyyy', 'id_ID').format(DateTime(year, month));
+    // Monday=1 -> 0 leading empty slots, Sunday=7 -> 6 leading empty slots
+    final leadingBlanks = DateTime(year, month, 1).weekday - 1;
 
     final dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color:  AppColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color:  AppColors.shadow.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      decoration: AppColors.cardDecoration(radius: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color:  AppColors.infoBg,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child:  Icon(
-                      CupertinoIcons.calendar,
-                      size: 15,
-                      color: AppColors.primaryBlue,
-                    ),
+              Expanded(
+                child: Text(
+                  'Kalender Kehadiran',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
+                    letterSpacing: -0.25,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'KALENDER KEHADIRAN',
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color:  AppColors.textMuted,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 monthLabel,
                 style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color:  AppColors.primaryBlue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -835,19 +808,17 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 14),
 
-          // Day of week labels
+          // Day of week headers aligned 1:1 with the 7-column GridView below
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: dayNames.map((name) {
-              return SizedBox(
-                width: 34,
+              return Expanded(
                 child: Text(
                   name,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color:  AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
                   ),
                 ),
               );
@@ -856,12 +827,22 @@ class _KehadiranTabState extends State<KehadiranTab> {
 
           const SizedBox(height: 8),
 
-          // Calendar Grid
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: List.generate(daysInMonth, (index) {
-              final dayNumber = index + 1;
+          // Proper 7-column aligned calendar grid
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: leadingBlanks + daysInMonth,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: 1.0,
+            ),
+            itemBuilder: (context, index) {
+              if (index < leadingBlanks) {
+                return const SizedBox.shrink();
+              }
+              final dayNumber = index - leadingBlanks + 1;
               final isToday = dayNumber == currentDay;
               final status = dayStatus[dayNumber];
               final isFuture = dayNumber > currentDay;
@@ -871,33 +852,31 @@ class _KehadiranTabState extends State<KehadiranTab> {
               Border? cellBorder;
 
               if (status == 'hadir') {
-                cellBg =  AppColors.success;
+                cellBg = AppColors.success;
                 textColor = Colors.white;
               } else if (status == 'izin') {
-                cellBg =  AppColors.warning;
+                cellBg = AppColors.warning;
                 textColor = Colors.white;
               } else if (status == 'sakit') {
-                cellBg =  AppColors.info;
+                cellBg = AppColors.info;
                 textColor = Colors.white;
               } else if (status == 'alpa' || status == 'alpha') {
-                cellBg =  AppColors.danger;
+                cellBg = AppColors.danger;
                 textColor = Colors.white;
               } else if (isFuture) {
-                cellBg =  AppColors.background;
-                textColor =  AppColors.textQuaternary;
-                cellBorder = Border.all(color:  AppColors.background);
+                cellBg = AppColors.background.withOpacity(0.55);
+                textColor = AppColors.textQuaternary;
               } else {
-                cellBg =  AppColors.background;
-                textColor =  AppColors.textMuted;
+                cellBg = AppColors.background;
+                textColor = AppColors.textMuted;
               }
 
               if (isToday) {
-                cellBorder = Border.all(color:  AppColors.primaryBlue, width: 2.0);
+                cellBorder =
+                    Border.all(color: AppColors.primaryBlue, width: 1.8);
               }
 
               return Container(
-                width: 34,
-                height: 34,
                 decoration: BoxDecoration(
                   color: cellBg,
                   borderRadius: BorderRadius.circular(10),
@@ -907,27 +886,30 @@ class _KehadiranTabState extends State<KehadiranTab> {
                   child: Text(
                     '$dayNumber',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: 11.5,
                       fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
                       color: textColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                 ),
               );
-            }),
+            },
           ),
 
           const SizedBox(height: 14),
 
-          // Legend Bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          // Legend Bar (wraps gracefully on small screens)
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 6,
             children: [
-              _buildLegendDot( AppColors.success, 'Hadir'),
-              _buildLegendDot( AppColors.warning, 'Izin'),
-              _buildLegendDot( AppColors.info, 'Sakit'),
-              _buildLegendDot( AppColors.danger, 'Alpa'),
-              _buildLegendDot( AppColors.primaryBlue, 'Hari Ini'),
+              _buildLegendDot(AppColors.success, 'Hadir'),
+              _buildLegendDot(AppColors.warning, 'Izin'),
+              _buildLegendDot(AppColors.info, 'Sakit'),
+              _buildLegendDot(AppColors.danger, 'Alpa'),
+              _buildLegendDot(AppColors.primaryBlue, 'Hari Ini'),
             ],
           ),
         ],

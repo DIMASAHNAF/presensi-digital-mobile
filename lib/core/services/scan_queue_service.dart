@@ -13,7 +13,7 @@ import 'telemetry_service.dart';
 ///
 /// Sinyal di lingkungan sekolah tidak selalu stabil. Bila server tak terjangkau
 /// saat siswa scan, paket presensi disimpan lokal lalu dikirim otomatis begitu
-/// koneksi kembali â€” supaya presensi tidak hilang.
+/// koneksi kembali — supaya presensi tidak hilang.
 class ScanQueueService {
   static const String _key = 'pending_scan_queue_v1';
   static const int _maxItems = 20;

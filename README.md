@@ -31,7 +31,7 @@
     </g>
     <!-- Text Elements -->
     <text x="140" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#ffffff" letter-spacing="0.5">
-      PRESENSI SISWA MOBILE <tspan fill="#38bdf8">v2.1.0+10</tspan>
+      PRESENSI SISWA MOBILE <tspan fill="#38bdf8">v2.1.1+11</tspan>
     </text>
     <text x="140" y="86" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="500" fill="#bfdbfe">
       SMK Negeri 1 Beringin • Flutter Android Native Biometric Attendance
@@ -43,7 +43,7 @@
     <g transform="translate(720, 28)">
       <rect width="145" height="30" rx="15" fill="#0369a1" stroke="#38bdf8" stroke-width="1.5"/>
       <circle cx="736" cy="43" r="5" fill="#38bdf8" filter="url(#mGlow)"/>
-      <text x="750" y="48" font-family="monospace" font-size="11" font-weight="700" fill="#ffffff">RELEASE v2.1.0</text>
+      <text x="750" y="48" font-family="monospace" font-size="11" font-weight="700" fill="#ffffff">RELEASE v2.1.1</text>
     </g>
   </svg>
 
@@ -138,7 +138,7 @@ flutter build apk --release
 Hasil kompilasi siap dipasang pada perangkat siswa:
 * **Lokasi APK**: `build/app/outputs/flutter-apk/app-release.apk`
 * **Package ID**: `id.sch.smknegeri1beringin.presensi`
-* **Version**: `2.1.0` (Build `10`)
+* **Version**: `2.1.1` (Build `11`)
 * **Ukuran**: ~`64 MB`
 * **Minimum Android**: Android 7.0+ (API level 24)
 
