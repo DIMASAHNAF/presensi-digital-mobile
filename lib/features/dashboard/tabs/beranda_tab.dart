@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/models/dashboard_full_model.dart';
 import '../../../../core/models/session_model.dart';
 import '../../../../core/models/user_model.dart';
@@ -52,9 +53,6 @@ class BerandaTab extends StatefulWidget {
 
 class _BerandaTabState extends State<BerandaTab>
     with TickerProviderStateMixin {
-  static const String _storageBase =
-      'https://presensi.smknegeri1beringin.sch.id/storage/';
-
   late AnimationController _jumpController;
   late Animation<double> _jumpAnimation;
   late Animation<double> _shadowScaleAnimation;
@@ -121,12 +119,7 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  String _formatAvatarUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return '$_storageBase$cleanPath';
-  }
+  String _formatAvatarUrl(String? path) => ApiConstants.resolveStorageUrl(path);
 
   String _getInitials(String name) {
     final parts = name.trim().split(' ');

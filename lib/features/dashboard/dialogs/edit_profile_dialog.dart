@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/api_service.dart';
@@ -398,25 +401,34 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   }
 
   Widget _buildBannerSection() {
+    final existingBannerUrl = ApiConstants.resolveStorageUrl(widget.user.banner);
     return Container(
       height: 120,
       width: double.infinity,
-      color:  AppColors.primaryDark,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryDeep,
+            AppColors.primaryDeep,
+            AppColors.primaryBlue.withOpacity(0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Stack(
         fit: StackFit.expand,
         children: [
           if (!_removeBanner && _newBannerFile != null)
-            Image.network(_newBannerFile!.path, fit: BoxFit.cover)
-          else if (!_removeBanner &&
-              widget.user.banner != null &&
-              widget.user.banner!.isNotEmpty)
+            (kIsWeb
+                ? Image.network(_newBannerFile!.path, fit: BoxFit.cover)
+                : Image.file(File(_newBannerFile!.path), fit: BoxFit.cover))
+          else if (!_removeBanner && existingBannerUrl.isNotEmpty)
             Image.network(
-              'https://presensi.smknegeri1beringin.sch.id/storage/${widget.user.banner}',
+              existingBannerUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            )
-          else
-            Container(color:  AppColors.primaryDark),
+            ),
 
           Container(color: Colors.black.withOpacity(0.35)),
 
@@ -439,8 +451,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                 ),
                 if (!_removeBanner &&
                     (_newBannerFile != null ||
-                        (widget.user.banner != null &&
-                            widget.user.banner!.isNotEmpty))) ...[
+                        existingBannerUrl.isNotEmpty)) ...[
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () {
@@ -497,18 +508,35 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: !_removeAvatar && _newAvatarFile != null
-                      ? Image.network(_newAvatarFile!.path,
-                          fit: BoxFit.cover)
-                      : !_removeAvatar &&
-                              widget.user.avatar != null &&
-                              widget.user.avatar!.isNotEmpty
-                          ? Image.network(
-                              'https://presensi.smknegeri1beringin.sch.id/storage/${widget.user.avatar}',
-                              fit: BoxFit.cover,
-                            )
-                          :  Icon(CupertinoIcons.person_fill,
-                              size: 40, color: AppColors.primaryBlue),
+                  child: Builder(
+                    builder: (_) {
+                      final existingAvatarUrl =
+                          ApiConstants.resolveStorageUrl(widget.user.avatar);
+                      if (!_removeAvatar && _newAvatarFile != null) {
+                        return kIsWeb
+                            ? Image.network(_newAvatarFile!.path,
+                                fit: BoxFit.cover)
+                            : Image.file(File(_newAvatarFile!.path),
+                                fit: BoxFit.cover);
+                      }
+                      if (!_removeAvatar && existingAvatarUrl.isNotEmpty) {
+                        return Image.network(
+                          existingAvatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            CupertinoIcons.person_fill,
+                            size: 40,
+                            color: AppColors.primaryBlue,
+                          ),
+                        );
+                      }
+                      return Icon(
+                        CupertinoIcons.person_fill,
+                        size: 40,
+                        color: AppColors.primaryBlue,
+                      );
+                    },
+                  ),
                 ),
                 Positioned(
                   bottom: 0,

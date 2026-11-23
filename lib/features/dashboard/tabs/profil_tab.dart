@@ -5,11 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/link.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/models/user_model.dart';
 import '../dialogs/change_password_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
-import '../dialogs/device_dialog.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/theme_service.dart';
 
@@ -26,9 +26,6 @@ class ProfilTab extends StatelessWidget {
     this.onOpenEnrollment,
     this.onProfileUpdated,
   });
-
-  static const String _storageBase =
-      'https://presensi.smknegeri1beringin.sch.id/storage/';
 
   static String _toTitleCase(String text) {
     if (text.isEmpty) return text;
@@ -220,17 +217,8 @@ class ProfilTab extends StatelessWidget {
               icon: CupertinoIcons.lock_shield,
               iconColor:  AppColors.primaryBlue,
               label: 'Ubah Kata Sandi Akun',
-              onTap: () => _openChangePassword(context),
-            ),
-            _buildActionTile(
-              icon: CupertinoIcons.device_phone_portrait,
-              iconColor:  AppColors.primaryIndigo,
-              label: 'Perangkat Saya',
               isLast: true,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                DeviceDialog.show(context);
-              },
+              onTap: () => _openChangePassword(context),
             ),
           ]),
 
@@ -278,7 +266,8 @@ class ProfilTab extends StatelessWidget {
   //  1. APPLE ID HERO CARD WITH CURVED WAVE BANNER
 
   Widget _buildAppleIDHero(BuildContext context, UserModel user) {
-    final hasBanner = user.banner != null && user.banner!.isNotEmpty;
+    final bannerUrl = ApiConstants.resolveStorageUrl(user.banner);
+    final hasBanner = bannerUrl.isNotEmpty;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -318,7 +307,7 @@ class ProfilTab extends StatelessWidget {
                 children: [
                   if (hasBanner)
                     Image.network(
-                      '$_storageBase${user.banner}',
+                      bannerUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
@@ -435,9 +424,9 @@ class ProfilTab extends StatelessWidget {
                         clipBehavior: Clip.antiAliasWithSaveLayer,
                         child: ClipOval(
                           clipBehavior: Clip.antiAliasWithSaveLayer,
-                          child: (user.avatar != null && user.avatar!.isNotEmpty)
+                          child: ApiConstants.resolveStorageUrl(user.avatar).isNotEmpty
                               ? Image.network(
-                                  '$_storageBase${user.avatar}',
+                                  ApiConstants.resolveStorageUrl(user.avatar),
                                   fit: BoxFit.cover,
                                   width: 86,
                                   height: 86,

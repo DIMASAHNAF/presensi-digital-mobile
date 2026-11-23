@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../dialogs/classmate_detail_dialog.dart';
 import '../../../core/theme/app_theme.dart';
@@ -20,9 +21,6 @@ class _TemanTabState extends State<TemanTab> {
   String _selectedFilter = 'Semua';
   final _searchController = TextEditingController();
   String _searchQuery = '';
-
-  static const String _storageBase =
-      'https://presensi.smknegeri1beringin.sch.id/storage/';
 
   String _toTitleCase(String text) {
     if (text.isEmpty) return text;
@@ -363,9 +361,9 @@ class _TemanTabState extends State<TemanTab> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(100),
                               clipBehavior: Clip.antiAliasWithSaveLayer,
-                              child: (cm.avatar != null && cm.avatar!.isNotEmpty)
+                              child: ApiConstants.resolveStorageUrl(cm.avatar).isNotEmpty
                                   ? Image.network(
-                                      '$_storageBase${cm.avatar}',
+                                      ApiConstants.resolveStorageUrl(cm.avatar),
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, __, ___) => Center(
                                         child: Text(

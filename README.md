@@ -106,9 +106,8 @@ Aplikasi Android ini berkomunikasi langsung dengan backend berkecepatan tinggi *
    - **Toleransi tepi 5.0 meter** agar siswa di batas gerbang tidak tertolak.
    - **Fallback WiFi Sekolah**: jika sinyal GPS lemah di dalam gedung/kelas, presensi tetap sah selama terhubung ke WiFi resmi sekolah (toleransi akurasi GPS hingga 150 meter).
    - Deteksi Anti-Mock Location (Fake GPS rejection).
-3. **Kunci Hardware Perangkat (Device Locking)**:
-   - Akun siswa terkunci pada satu hardware smartphone untuk mencegah titip absen.
-   - Reset perangkat mandiri via WhatsApp OTP atau tombol **Reset Perangkat** oleh Admin di Web.
+3. **Bebas Kunci Perangkat (Fleksibel bagi Siswa)**:
+   - Login tidak dikunci pada satu perangkat agar siswa yang sedang tidak membawa ponsel tetap dapat presensi secara sah melalui verifikasi biometrik wajah 512-D.
 4. **Alur Izin & Sakit Tertib**:
    - Pengajuan izin dan sakit dikhususkan bagi Orang Tua dan Wali Kelas melalui portal Web. Siswa dapat memantau status izin/sakit mereka secara transparan pada kalender dan riwayat.
 5. **Offline Attendance Queue**:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/models/dashboard_full_model.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -15,9 +16,6 @@ class ClassmateDetailDialog extends StatelessWidget {
     required this.classmate,
     required this.kelasNama,
   });
-
-  static const String _storageBase =
-      'https://presensi.smknegeri1beringin.sch.id/storage/';
 
   static String _toTitleCase(String text) {
     if (text.isEmpty) return text;
@@ -44,12 +42,7 @@ class ClassmateDetailDialog extends StatelessWidget {
     );
   }
 
-  String _formatUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return '$_storageBase$cleanPath';
-  }
+  String _formatUrl(String? path) => ApiConstants.resolveStorageUrl(path);
 
   Future<void> _openWebsite(String url) async {
     try {
@@ -114,23 +107,34 @@ class ClassmateDetailDialog extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                height: 110,
+              SizedBox(
+                height: 118,
                 width: double.infinity,
-                decoration:  BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primaryDeep, AppColors.primaryDeep],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: bannerUrl.isNotEmpty
-                    ? Image.network(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildDefaultBanner(),
+                    if (bannerUrl.isNotEmpty)
+                      Image.network(
                         bannerUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildDefaultBanner(),
-                      )
-                    : _buildDefaultBanner(),
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.28),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.22),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               // Close Button (top right)
@@ -416,20 +420,19 @@ class ClassmateDetailDialog extends StatelessWidget {
 
   Widget _buildDefaultBanner() {
     return Container(
-      color:  AppColors.primaryDark,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.15,
-              child: Image.asset(
-                'assets/images/map_campus.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox(),
-              ),
-            ),
-          ),
-        ],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryDeep,
+            AppColors.primaryDeep,
+            AppColors.primaryBlue.withOpacity(0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: CustomPaint(
+        painter: _BannerDotGridPainter(),
       ),
     );
   }
@@ -448,4 +451,22 @@ class ClassmateDetailDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BannerDotGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.12)
+      ..style = PaintingStyle.fill;
+    const spacing = 16.0;
+    for (double y = 8; y < size.height; y += spacing) {
+      for (double x = 8; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.1, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

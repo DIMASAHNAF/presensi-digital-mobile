@@ -22,4 +22,28 @@ class ApiConstants {
   static const String notifications = '$baseUrl/siswa/notifications';
   static const String device = '$baseUrl/siswa/device';
   static const String deviceReset = '$baseUrl/siswa/device/reset';
+
+  /// Resolves a stored avatar/banner relative path or full URL into a clean, loadable URL.
+  /// Returns an empty string for null, empty, or Laravel sentinel `'0'` / `'null'`.
+  static String resolveStorageUrl(String? path) {
+    if (path == null) return '';
+    final trimmed = path.trim();
+    if (trimmed.isEmpty ||
+        trimmed == '0' ||
+        trimmed.toLowerCase() == 'null') {
+      return '';
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return Uri.encodeFull(trimmed);
+    }
+    var clean = trimmed;
+    while (clean.startsWith('/')) {
+      clean = clean.substring(1);
+    }
+    if (clean.startsWith('storage/')) {
+      clean = clean.substring('storage/'.length);
+    }
+    if (clean.isEmpty || clean == '0') return '';
+    return Uri.encodeFull('$storageBaseUrl/$clean');
+  }
 }
