@@ -1,22 +1,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="id.sch.smknegeri1beringin.presensi">
 
     <!-- Permissions required for Attendance Verification -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    
+    <!-- Camera plugin declares RECORD_AUDIO by default; we never capture audio (enableAudio: false) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+
     <!-- Feature checks -->
     <uses-feature android:name="android.hardware.camera" android:required="true"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-    <uses-feature android:name="android.hardware.location.gps" android:required="true"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
 
-    <!-- Queries for url_launcher (Google Maps, Browser) -->
+    <!-- Queries for url_launcher (Google Maps, WhatsApp, Browser) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -28,7 +36,7 @@
         android:label="Presensi SMKN 1 Beringin"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
         
         <activity
             android:name=".MainActivity"

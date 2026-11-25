@@ -211,12 +211,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final maxRadius = _data!.geofencing!.radiusMeters.toInt();
     if (mounted) {
       setState(() => _geofenceResult = geoRes);
+      if (geoRes.issue == LocationIssue.serviceDisabled) {
+        _showActionToast(
+          'GPS perangkat sedang mati. Nyalakan Lokasi untuk presensi.',
+          actionLabel: 'Aktifkan',
+          onAction: () => LocationService.openLocationSettings(),
+        );
+        return;
+      }
+      if (geoRes.issue == LocationIssue.permissionDeniedForever) {
+        _showActionToast(
+          'Izin lokasi diblokir. Aktifkan di Pengaturan Aplikasi.',
+          actionLabel: 'Pengaturan',
+          onAction: () => LocationService.openAppSettings(),
+        );
+        return;
+      }
       _showToast(geoRes.isInside
           ? (geoRes.verifiedByWifi
               ? 'Terverifikasi melalui jaringan WiFi resmi sekolah.'
               : 'Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)} m dari sekolah.')
-          : 'Di luar area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} (Maks ${maxRadius}m).');
+          : (geoRes.errorMessage ??
+              'Di luar area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} (Maks ${maxRadius}m).'));
     }
+  }
+
+  void _showActionToast(
+    String message, {
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        action: SnackBarAction(
+          label: actionLabel,
+          textColor: AppColors.info,
+          onPressed: onAction,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: AppColors.primaryDeep,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
+    );
   }
 
   void _showToast(String message) {

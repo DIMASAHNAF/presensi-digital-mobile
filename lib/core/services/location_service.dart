@@ -5,11 +5,22 @@ import 'package:flutter/services.dart' show MethodChannel;
 import 'package:geolocator/geolocator.dart';
 import '../models/session_model.dart';
 
+enum LocationIssue {
+  none,
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+  mocked,
+  lowAccuracy,
+  outsideArea,
+}
+
 class GeofenceResult {
   final bool isInside;
   final double distanceMeters;
   final bool isMocked;
   final bool verifiedByWifi;
+  final LocationIssue issue;
   final Position? position;
   final String? errorMessage;
 
@@ -20,6 +31,7 @@ class GeofenceResult {
     required this.distanceMeters,
     required this.isMocked,
     this.verifiedByWifi = false,
+    this.issue = LocationIssue.none,
     this.position,
     this.errorMessage,
   });
@@ -93,14 +105,22 @@ class LocationService {
   }
 
   /// Get current GPS position with high accuracy.
-  /// Returns null on failure; callers use [lastError] for the reason.
+  /// Returns null on failure; callers use [lastError] and [lastIssue] for the reason.
   static String? lastError;
+  static LocationIssue lastIssue = LocationIssue.none;
+
+  static Future<bool> openLocationSettings() =>
+      Geolocator.openLocationSettings();
+
+  static Future<bool> openAppSettings() => Geolocator.openAppSettings();
 
   static Future<Position?> getCurrentPosition() async {
     lastError = null;
+    lastIssue = LocationIssue.none;
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        lastIssue = LocationIssue.serviceDisabled;
         lastError = kIsWeb
             ? 'Layanan lokasi browser tidak aktif. Aktifkan izin lokasi di pengaturan situs.'
             : 'GPS perangkat tidak aktif. Nyalakan Lokasi lalu coba lagi.';
@@ -111,10 +131,12 @@ class LocationService {
       if (!hasPermission) {
         final perm = await Geolocator.checkPermission();
         if (perm == LocationPermission.deniedForever) {
+          lastIssue = LocationIssue.permissionDeniedForever;
           lastError = kIsWeb
               ? 'Izin lokasi diblokir permanen. Buka pengaturan situs browser dan izinkan Lokasi.'
               : 'Izin lokasi diblokir permanen. Aktifkan di Pengaturan > Aplikasi > Izin.';
         } else {
+          lastIssue = LocationIssue.permissionDenied;
           lastError = 'Izin lokasi diperlukan untuk memverifikasi kehadiran.';
         }
         return null;
@@ -128,6 +150,7 @@ class LocationService {
         ),
       );
     } catch (_) {
+      lastIssue = LocationIssue.lowAccuracy;
       lastError = kIsWeb
           ? 'Gagal membaca lokasi. Pastikan situs diakses via HTTPS dan izin lokasi diizinkan.'
           : 'Gagal membaca sinyal GPS. Coba di area terbuka.';
@@ -162,6 +185,7 @@ class LocationService {
             isInside: false,
             distanceMeters: 9999,
             isMocked: true,
+            issue: LocationIssue.mocked,
             errorMessage:
                 'Terdeteksi aplikasi Lokasi Palsu (Fake GPS / Mock Location). Matikan untuk melanjutkan.',
           );
@@ -171,12 +195,16 @@ class LocationService {
           distanceMeters: 0,
           isMocked: false,
           verifiedByWifi: true,
+          issue: LocationIssue.none,
         );
       }
       return GeofenceResult(
         isInside: false,
         distanceMeters: 9999,
         isMocked: false,
+        issue: lastIssue == LocationIssue.none
+            ? LocationIssue.lowAccuracy
+            : lastIssue,
         errorMessage: lastError ??
             'Gagal mendapatkan sinyal GPS. Pastikan lokasi aktif dan izin diberikan.',
       );
@@ -189,6 +217,7 @@ class LocationService {
         isInside: false,
         distanceMeters: 9999,
         isMocked: true,
+        issue: LocationIssue.mocked,
         position: pos,
         errorMessage:
             'Terdeteksi aplikasi Lokasi Palsu (Fake GPS / Mock Location). Matikan untuk melanjutkan.',
@@ -201,6 +230,7 @@ class LocationService {
         isInside: false,
         distanceMeters: 9999,
         isMocked: false,
+        issue: LocationIssue.lowAccuracy,
         position: pos,
         errorMessage:
             'Akurasi GPS rendah (${pos.accuracy.toInt()}m, batas ${maxAccuracyMeters.toInt()}m). Pindah ke ruang terbuka.',
@@ -226,6 +256,7 @@ class LocationService {
         isInside: false,
         distanceMeters: 9999,
         isMocked: false,
+        issue: LocationIssue.lowAccuracy,
         position: pos,
         errorMessage:
             'Lokasi GPS basi atau koordinat tidak valid. Refresh lokasi lalu coba lagi.',
@@ -244,6 +275,7 @@ class LocationService {
         isInside: inside,
         distanceMeters: distanceToCenter,
         isMocked: false,
+        issue: inside ? LocationIssue.none : LocationIssue.outsideArea,
         position: pos,
         errorMessage: inside
             ? null
@@ -257,6 +289,7 @@ class LocationService {
       isInside: insideRadius,
       distanceMeters: distanceToCenter,
       isMocked: false,
+      issue: insideRadius ? LocationIssue.none : LocationIssue.outsideArea,
       position: pos,
       errorMessage: insideRadius
           ? null

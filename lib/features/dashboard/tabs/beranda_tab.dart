@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/models/dashboard_full_model.dart';
 import '../../../../core/models/session_model.dart';
@@ -608,20 +609,67 @@ class _BerandaTabState extends State<BerandaTab>
     );
   }
 
-  //  2B. WIDGET PETA (Apple Maps-inspired calm beacon)
+  Future<void> _openGoogleMaps() async {
+    final geoCfg = widget.data.geofencing;
+    final lat = geoCfg?.latitude ?? 3.586138;
+    final lng = geoCfg?.longitude ?? 98.881361;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleMapBadgeTap() async {
+    HapticFeedback.lightImpact();
+    final issue = widget.geofenceResult?.issue ?? LocationIssue.none;
+    if (issue == LocationIssue.serviceDisabled) {
+      await LocationService.openLocationSettings();
+      return;
+    }
+    if (issue == LocationIssue.permissionDeniedForever) {
+      await LocationService.openAppSettings();
+      return;
+    }
+    if (widget.onRefreshLocation != null) {
+      widget.onRefreshLocation!();
+    }
+  }
+
+  //  2B. WIDGET PETA (Apple Maps-inspired calm beacon + live student dot + Maps launcher)
 
   Widget _buildMapWidget() {
-    final radiusM = widget.data.geofencing?.radiusMeters.toInt() ?? 110;
+    final geoCfg = widget.data.geofencing;
+    final radiusM = geoCfg?.radiusMeters.toInt() ?? 110;
+    final geo = widget.geofenceResult;
+    final pos = geo?.position;
+
+    // Relative offset of student's live GPS dot from school center (clamped nicely inside card)
+    double studentDx = 0;
+    double studentDy = 0;
+    bool showStudentDot = false;
+    if (pos != null && geoCfg != null && !(geo?.isMocked ?? false)) {
+      final dLatM = (pos.latitude - geoCfg.latitude) * 110574.0;
+      final dLngM = (pos.longitude - geoCfg.longitude) * 111000.0;
+      // Scale: ~110m maps to ~44px from center
+      final scale = 44.0 / (radiusM > 0 ? radiusM : 110);
+      studentDx = (dLngM * scale).clamp(-110.0, 110.0);
+      studentDy = (-dLatM * scale).clamp(-52.0, 52.0);
+      showStudentDot = true;
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        height: 152,
+        height: 158,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Campus map backdrop with subtle dark-mode dimming
+            // Instant campus map backdrop (zero blank grey OSM tile failures)
             Image.asset(
               'assets/images/map_campus_v2.png',
               fit: BoxFit.cover,
@@ -633,7 +681,7 @@ class _BerandaTabState extends State<BerandaTab>
             if (AppColors.isDark)
               Container(color: Colors.black.withOpacity(0.42)),
 
-            // Calm Apple Maps pulsing beacon at center
+            // Calm Apple Maps pulsing beacon at school center
             Center(
               child: SizedBox(
                 width: 112,
@@ -666,12 +714,12 @@ class _BerandaTabState extends State<BerandaTab>
                       },
                     ),
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
                         color: AppColors.primaryBlue,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
+                        border: Border.all(color: Colors.white, width: 2.5),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.18),
@@ -682,7 +730,7 @@ class _BerandaTabState extends State<BerandaTab>
                       ),
                       child: const Icon(
                         Icons.school_rounded,
-                        size: 16,
+                        size: 15,
                         color: Colors.white,
                       ),
                     ),
@@ -691,13 +739,75 @@ class _BerandaTabState extends State<BerandaTab>
               ),
             ),
 
-            // Top-center live geofence/WiFi pill
+            // Live student position dot when GPS lock is acquired
+            if (showStudentDot)
+              Center(
+                child: Transform.translate(
+                  offset: Offset(studentDx, studentDy),
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: (geo?.isInside ?? false)
+                          ? AppColors.success
+                          : AppColors.warning,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.28),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Top-center live geofence/WiFi/permission pill (tappable!)
             Positioned(
               top: 10,
-              left: 12,
-              right: 12,
+              left: 44,
+              right: 44,
               child: Center(
-                child: _buildMapStatusBadge(),
+                child: GestureDetector(
+                  onTap: _handleMapBadgeTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: _buildMapStatusBadge(),
+                ),
+              ),
+            ),
+
+            // Top-right Google Maps launcher button
+            Positioned(
+              top: 10,
+              right: 10,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _openGoogleMaps();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withOpacity(0.92),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    CupertinoIcons.map_fill,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
 
@@ -733,16 +843,13 @@ class _BerandaTabState extends State<BerandaTab>
               ),
             ),
 
-            // Bottom-right circular locate button
+            // Bottom-right circular locate/refresh button
             if (widget.onRefreshLocation != null)
               Positioned(
                 bottom: 10,
                 right: 10,
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    widget.onRefreshLocation!();
-                  },
+                  onTap: _handleMapBadgeTap,
                   behavior: HitTestBehavior.opaque,
                   child: Container(
                     width: 34,
@@ -850,35 +957,57 @@ class _BerandaTabState extends State<BerandaTab>
       );
     }
 
-    if (geo.errorMessage != null) {
+    if (geo.errorMessage != null && !geo.isInside) {
+      String label = 'GPS Belum Akurat';
+      Color pillColor = AppColors.textSecondary;
+      IconData pillIcon = CupertinoIcons.location;
+
+      if (geo.issue == LocationIssue.serviceDisabled) {
+        label = 'GPS Nonaktif • Aktifkan';
+        pillColor = AppColors.warning;
+        pillIcon = CupertinoIcons.location_slash_fill;
+      } else if (geo.issue == LocationIssue.permissionDenied) {
+        label = 'Izinkan Akses Lokasi';
+        pillColor = AppColors.primaryBlue;
+        pillIcon = CupertinoIcons.lock_shield_fill;
+      } else if (geo.issue == LocationIssue.permissionDeniedForever) {
+        label = 'Buka Pengaturan Lokasi';
+        pillColor = AppColors.danger;
+        pillIcon = CupertinoIcons.gear_alt_fill;
+      } else if (geo.issue == LocationIssue.outsideArea) {
+        label = 'Di Luar Area • ${geo.distanceMeters.toStringAsFixed(0)}m';
+        pillColor = AppColors.warning;
+        pillIcon = CupertinoIcons.location_solid;
+      }
+
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
           color: AppColors.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color:  AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-             Icon(
-              CupertinoIcons.location,
-              size: 11,
-              color: AppColors.textMuted,
-            ),
+            Icon(pillIcon, size: 12, color: pillColor),
             const SizedBox(width: 5),
-            Text(
-              'GPS Belum Akurat',
-              style: GoogleFonts.inter(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w600,
-                color:  AppColors.textMuted,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: pillColor,
+                ),
               ),
             ),
           ],

@@ -1122,7 +1122,9 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                                   color: Color(0xFF007AFF)),
                                               const SizedBox(width: 6),
                                               Text(
-                                                'Cara Buka Izin di Chrome / Safari:',
+                                                kIsWeb
+                                                    ? 'Cara Buka Izin di Chrome / Safari:'
+                                                    : 'Cara Aktifkan Izin di Android:',
                                                 style:
                                                     GoogleFonts.plusJakartaSans(
                                                   fontSize: 11,
@@ -1134,9 +1136,13 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                           ),
                                           const SizedBox(height: 6),
                                           Text(
-                                            '1. Klik ikon Setelan Situs (tune ) di sebelah kiri URL presensi.\n'
-                                            '2. Pada baris "Kamera", ubah ke "Izinkan" (Allow).\n'
-                                            '3. Ketuk tombol di bawah untuk menyambungkan ulang.',
+                                            kIsWeb
+                                                ? '1. Klik ikon Setelan Situs di sebelah kiri URL presensi.\n'
+                                                    '2. Pada baris "Kamera", ubah ke "Izinkan" (Allow).\n'
+                                                    '3. Ketuk tombol di bawah untuk menyambungkan ulang.'
+                                                : '1. Ketuk "Buka Pengaturan Aplikasi" di bawah.\n'
+                                                    '2. Pilih menu Izin (Permissions) > Kamera > Izinkan.\n'
+                                                    '3. Kembali ke aplikasi lalu ketuk Coba Lagi.',
                                             style: GoogleFonts.inter(
                                               fontSize: 10.5,
                                               height: 1.45,
@@ -1146,6 +1152,34 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
                                         ],
                                       ),
                                     ),
+                                    if (!kIsWeb) ...[
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: () => openAppSettings(),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFF007AFF),
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                            ),
+                                            elevation: 0,
+                                          ),
+                                          child: Text(
+                                            'Buka Pengaturan Aplikasi',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                   const SizedBox(height: 20),
                                   SizedBox(

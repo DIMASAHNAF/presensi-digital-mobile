@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
@@ -238,9 +239,31 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   Future<void> _initCamera() async {
     try {
-      try {
-        await Permission.camera.request();
-      } catch (_) {}
+      if (!kIsWeb) {
+        try {
+          final status = await Permission.camera.request();
+          if (status.isPermanentlyDenied) {
+            if (mounted) {
+              setState(() {
+                _scanState = ScanState.failed;
+                _scanErrorMessage =
+                    'Izin kamera diblokir permanen. Buka Pengaturan Aplikasi dan aktifkan izin Kamera.';
+              });
+            }
+            return;
+          }
+          if (status.isDenied) {
+            if (mounted) {
+              setState(() {
+                _scanState = ScanState.failed;
+                _scanErrorMessage =
+                    'Izin kamera diperlukan untuk memindai wajah presensi.';
+              });
+            }
+            return;
+          }
+        } catch (_) {}
+      }
 
       _cameras = await availableCameras();
       if (_cameras == null || _cameras!.isEmpty) {
@@ -1235,13 +1258,21 @@ class _ScannerScreenState extends State<ScannerScreen>
         msgLower.contains('dahi');
     final isNoFace = msgLower.contains('tidak ada wajah') ||
         msgLower.contains('tidak terdeteksi');
+    final isPermError = msgLower.contains('izin') ||
+        msgLower.contains('permission') ||
+        msgLower.contains('diblokir');
 
     String modalTitle = 'Wajah Tidak Cocok';
     IconData modalIcon = Icons.close_rounded;
     Color modalAccent = const Color(0xFFFF6961);
     Color modalBgGlow = const Color(0xFFFF3B30);
 
-    if (isDark) {
+    if (isPermError) {
+      modalTitle = 'Izin Kamera Diperlukan';
+      modalIcon = Icons.videocam_off_rounded;
+      modalAccent = const Color(0xFFFFCC00);
+      modalBgGlow = const Color(0xFFFF9500);
+    } else if (isDark) {
       modalTitle = 'Pencahayaan Kurang';
       modalIcon = Icons.nightlight_round;
       modalAccent = const Color(0xFFFFCC00);
@@ -1336,7 +1367,32 @@ class _ScannerScreenState extends State<ScannerScreen>
 
                 const SizedBox(height: 22),
 
-                // Apple Capsule Button
+                // Apple Capsule Button(s)
+                if (isPermError && !kIsWeb) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => openAppSettings(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF007AFF),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Buka Pengaturan',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
