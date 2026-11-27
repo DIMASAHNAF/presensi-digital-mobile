@@ -1,0 +1,75 @@
+name: Build iOS Unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-ios-ipa.yml'
+
+jobs:
+  build-ios-ipa:
+    name: Build Unsigned iOS IPA (Sideload Testing)
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Configure Flutter for CocoaPods iOS build
+        run: |
+          flutter --version
+          # Use CocoaPods so ios/Podfile permission_handler macros (PERMISSION_CAMERA=1, etc.) apply reliably
+          flutter config --no-enable-swift-package-manager
+          flutter pub get
+
+      - name: Run Flutter unit & widget tests
+        run: flutter test
+
+      - name: Build iOS Release (No Codesign)
+        run: flutter build ios --release --no-codesign --verbose
+
+      - name: Package Unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: $APP_PATH not found!"
+            exit 1
+          fi
+
+          rm -rf build/ios/ipa_stage
+          mkdir -p build/ios/ipa_stage/Payload
+          cp -R "$APP_PATH" build/ios/ipa_stage/Payload/Runner.app
+          rm -rf build/ios/ipa_stage/Payload/Runner.app/_CodeSignature
+
+          VERSION=$(grep -E '^version:' pubspec.yaml | awk '{print $2}' | tr '+' '-')
+          IPA_NAME="presensi-smkn1beringin-v${VERSION}-ios-unsigned.ipa"
+          (cd build/ios/ipa_stage && zip -qry "../${IPA_NAME}" Payload)
+
+          echo "IPA_PATH=build/ios/${IPA_NAME}" >> "$GITHUB_ENV"
+          echo "IPA_NAME=${IPA_NAME}" >> "$GITHUB_ENV"
+
+          echo "=== IPA Verification ==="
+          ls -lh "build/ios/${IPA_NAME}"
+          file build/ios/ipa_stage/Payload/Runner.app/Runner
+          plutil -p build/ios/ipa_stage/Payload/Runner.app/Info.plist | grep -E "CFBundleIdentifier|CFBundleDisplayName|CFBundleShortVersionString|CFBundleVersion|MinimumOSVersion|NSCameraUsageDescription|NSPhotoLibraryUsageDescription|NSLocationWhenInUseUsageDescription"
+
+      - name: Upload Unsigned IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: presensi-ios-unsigned-ipa
+          path: ${{ env.IPA_PATH }}
+          retention-days: 30
