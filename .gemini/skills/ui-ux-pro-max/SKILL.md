@@ -1,135 +1,165 @@
 ---
 name: ui-ux-pro-max
-description: Premium iOS/Apple-style mobile UI/UX design system for the Presensi SMKN 1 Beringin Flutter app. Enforces Apple HIG principles, animation standards, and premium design patterns.
+description: Use when designing, styling, building, or reviewing user interfaces across Web (Tailwind, Livewire, Blade, Alpine.js) and Mobile (Flutter, iOS Cupertino, Android Material You). Enforces premium Apple HIG design language, modern micro-interactions, responsive typography, 8-pt spatial rhythm, frosted glass/elevated surfaces, and strict anti-AI-slop quality polish.
 ---
 
-# UI/UX Pro Max — Apple Design Language for Presensi Mobile
+# UI/UX Pro Max — Design System & Interaction Standards
 
 ## Design Philosophy
 
-This skill enforces a **premium iOS/Apple Human Interface Guidelines (HIG)** design language across the entire Presensi mobile app. Every component should feel like it belongs on an iPhone — smooth, refined, and intentional.
+This skill enforces a **luxury, Apple Human Interface Guidelines (HIG)-inspired** aesthetic coupled with modern SaaS visual craft. Every screen, card, modal, and button must feel deliberate, responsive, tactile, and crafted by a senior product designer — never auto-generated, generic, or unfinished.
 
-## Core Design Tokens
+---
 
-### Colors (Apple System Colors)
-| Token | Hex | Usage |
-|-------|-----|-------|
-| Primary Blue | `#007AFF` | CTAs, links, active states |
-| System Indigo | `#5856D6` | Gradient accents |
-| System Green | `#34C759` | Success, hadir, active |
-| System Orange | `#FF9500` | Warnings, izin |
-| System Red | `#FF3B30` | Errors, alpa, danger |
-| System Teal | `#5AC8FA` | Info, secondary actions |
-| Label Primary | `#000000` | Main text |
-| Label Secondary | `#3C3C43` (60% opacity feel) | Body text |
-| Label Tertiary | `#8E8E93` | Muted, placeholder |
-| Separator | `#D1D1D6` | Borders, dividers |
-| System BG | `#F2F2F7` | Page background |
-| Elevated Surface | `#FFFFFF` | Cards, modals |
+## 1. Core Visual Tokens
 
-### Typography
-- **Headlines**: Plus Jakarta Sans, weight 700-800, negative letter-spacing (-0.3 to -0.8)
-- **Body/Labels**: Inter, weight 400-600, normal spacing
-- **Mono/Data**: JetBrains Mono or Inter Tight for numbers/codes
+### Colors (Apple Semantic Palette)
+| Token | Hex | Role & Usage |
+|---|---|---|
+| **Primary Accent** | `#007AFF` | Primary CTAs, active tab, key highlights |
+| **System Indigo** | `#5856D6` | Gradients, secondary badges, premium accents |
+| **Success / Hadir** | `#34C759` | Confirmed attendance, success toasts, verified states |
+| **Warning / Izin** | `#FF9500` | Excused absence, late alerts, pending sync |
+| **Danger / Alpa** | `#FF3B30` | Unexcused absence, errors, destructive actions |
+| **Teal / Info** | `#5AC8FA` | Explanatory badges, secondary hints, neutral highlights |
+| **Surface Dark (Text)** | `#1C1C1E` | Primary headings, readable high-contrast body text |
+| **Surface Muted (Text)**| `#3C3C43` (60%) | Supporting text, descriptions, timestamps |
+| **Surface Tertiary** | `#8E8E93` | Placeholders, inactive icons, subtle hints |
+| **Canvas Background** | `#F2F2F7` | iOS grouped background, modern page background |
+| **Elevated Card BG** | `#FFFFFF` | Primary card surfaces, bottom sheets, modals |
+| **Border / Divider** | `#E5E5EA` / `#D1D1D6` | Hairline dividers (0.5px to 1px) |
 
-### Spacing Scale
-- `4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48`
-- Prefer **8-point grid** alignment
+### Typography Scale
+- **Headlines / Display**: *Plus Jakarta Sans* or *SF Pro Display*, weights 700-800, tight negative tracking (`letter-spacing: -0.02em` to `-0.04em`).
+- **Body / Interface**: *Inter* or *SF Pro Text*, weights 400-600, balanced line height (`1.4` to `1.6`).
+- **Data / Numbers / Timestamps**: *JetBrains Mono* or *Inter Tight*, tabular numerals (`font-variant-numeric: tabular-nums`).
 
-### Border Radius Scale
-- Small elements (badges, pills): R20-R24
-- Cards: R16-R22
-- Modals/Sheets: R24-R28
-- Buttons: R12-R14
-- Inputs: R12-R14
-- Full circle: R999 (avatar)
+### 8-Point Spatial Grid
+- Strict spacing scale: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64px`.
+- Card padding: `16px` (compact) or `20-24px` (spacious).
+- Touch target minimum: `44x44px` (iOS standard) or `48x48px` (Android standard).
 
-### Shadows (Apple-style)
+### Border Radius Hierarchy
+- **Pills / Badges**: `rounded-full` / `BorderRadius.circular(999)`
+- **Modals / Sheets**: `24px - 28px` (prominent top radii for bottom sheets)
+- **Cards / Containers**: `16px - 22px`
+- **Buttons / Form Inputs**: `12px - 14px`
+- **Avatars**: `rounded-full` with subtle 1px border or ring
+
+### Shadows & Elevated Surfaces (Apple-Style)
+Never use harsh, pitch-black drop shadows. Always use multi-layered, low-opacity shadows:
+```css
+/* CSS / Tailwind */
+.shadow-apple-subtle {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 8px 16px -4px rgba(0, 0, 0, 0.02);
+}
+.shadow-apple-elevated {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 16px 32px -6px rgba(0, 0, 0, 0.05);
+}
+.shadow-apple-glow {
+  box-shadow: 0 8px 24px -4px rgba(0, 122, 255, 0.25);
+}
+```
+
 ```dart
-// Subtle card shadow
-BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: Offset(0, 4))
-
-// Elevated shadow (modals, floating nav)
-BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 24, offset: Offset(0, 8))
-
-// Glow shadow (colored elements like session card)
-BoxShadow(color: primaryBlue.withOpacity(0.25), blurRadius: 20, offset: Offset(0, 8))
+// Flutter
+final kSubtleCardShadow = [
+  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+];
+final kElevatedModalShadow = [
+  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 8)),
+];
+final kGlowAccentShadow = [
+  BoxShadow(color: const Color(0xFF007AFF).withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 8)),
+];
 ```
 
-## Animation Standards
+---
 
-### Timing Curves
-| Type | Curve | Duration |
-|------|-------|----------|
-| Enter/Appear | `Curves.easeOutCubic` | 300-500ms |
-| Exit/Disappear | `Curves.easeInCubic` | 200-300ms |
-| Spring/Bounce | `Curves.easeOutBack` | 400-600ms |
-| Tab switch | `Curves.easeInOut` | 250ms |
-| Press feedback | `Curves.easeOut` | 100ms down, 200ms up |
+## 2. Motion, Physics & Micro-Interactions
 
-### Animation Patterns
-1. **Page Enter**: Staggered fadeIn + slideY (begin: 0.03-0.05, end: 0), 50-100ms stagger between elements
-2. **Press Effect**: Scale to 0.96 on press, spring back to 1.0 on release
-3. **Tab Switch**: CrossFade with 250ms duration
-4. **List Items**: Staggered fadeIn + slideX (begin: 0.02), 40-60ms stagger
-5. **Modals**: SlideUp from bottom with spring physics
-6. **Shimmer Loading**: Use flutter_animate's shimmer for skeleton placeholders
-7. **Pulse**: Green status dots should pulse subtly (opacity 0.6-1.0, 2s cycle)
+### Timing Curves & Durations
+- **Enter / Pop In**: `easeOutCubic` (300ms - 400ms)
+- **Exit / Dismiss**: `easeInCubic` (200ms - 250ms)
+- **Interactive Press Feedback**: `easeOut` (100ms down, 200ms spring return)
+- **Tab / View Transitions**: `easeInOutCubic` (250ms - 300ms)
 
-### Required Packages
-```yaml
-flutter_animate: ^4.5.0  # Primary animation toolkit
+### Interaction Standards
+1. **Active Tap/Click Feedback**:
+   - Web: `active:scale-[0.97] transition-transform duration-100`
+   - Mobile: Scale animation `0.96` + `HapticFeedback.lightImpact()` on tap.
+2. **Skeleton Shimmer Over Spinners**:
+   - Never show a blank screen with a solitary circular spinner.
+   - Use animated skeleton shimmer replicating the exact card/content silhouette.
+3. **Staggered Entrance**:
+   - When loading lists or dashboards, stagger item entrance by `40ms - 60ms` with a subtle fade-in + 4px upward translation.
+4. **Subtle Status Pulse**:
+   - Active status indicators (e.g. "Kamera Aktif", "GPS Terkunci", "MikroTik Terhubung") should pulse gently (opacity oscillating between 0.6 and 1.0 on a 2-second loop).
+
+---
+
+## 3. Web UI Implementation (Tailwind, Livewire, Alpine.js)
+
+### Frosted Glassmorphism (iOS Vibrancy)
+```html
+<div class="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-apple-subtle p-5">
+  <!-- Content -->
+</div>
 ```
 
-## Component Patterns
+### Action Buttons
+```html
+<!-- Primary Button -->
+<button class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white font-semibold shadow-sm transition-all duration-150">
+  <span>Presensi Sekarang</span>
+</button>
 
-### Cards
-- White background, R16-R22 corners
-- 0.5px border in `#E5E5EA` OR no border with subtle shadow
-- Never both heavy border AND heavy shadow
-- Content padding: 16-20px
+<!-- Secondary Ghost Button -->
+<button class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-[0.97] text-zinc-800 font-medium transition-all duration-150">
+  <span>Riwayat</span>
+</button>
+```
 
-### Buttons
-- Primary: Filled `#007AFF`, white text, R14, height 48-52
-- Secondary: Outlined with `#D1D1D6` border, dark text
-- Destructive: Filled `#FF3B30` or outlined with red text
-- Press: Scale 0.96 + opacity 0.8
+### Livewire & Alpine Micro-Interactions
+- Use `wire:loading.class="opacity-50 pointer-events-none"` for clean disabled states during network round-trips.
+- Use `x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"` on dropdowns and modals.
 
-### Input Fields
-- Filled background `#F2F2F7`
-- No visible border in resting state
-- Blue border (`#007AFF`, 1.5px) on focus
-- R12-R14 corners
-- Prefix icons in `#8E8E93`
-- Placeholder in `#C7C7CC`
+---
 
-### Pills/Badges
-- Active: Filled primary color, white text
-- Inactive: `#F2F2F7` bg, `#8E8E93` text
-- R20-R24 corners
-- Padding: horizontal 12-16, vertical 6-8
+## 4. Mobile UI Implementation (Flutter)
 
-### Bottom Navigation
-- Floating pill design, R28
-- White bg with subtle shadow
-- Active tab: blue pill bg with white icon + label
-- Inactive: gray icon only
-- Spring animation on tab change
+### Key Packages
+- `flutter_animate: ^4.5.0` (smooth declarative staggered animations)
+- `google_fonts: ^6.2.1` (typography loading)
+- `cached_network_image: ^3.3.1` (image caching with error placeholders)
 
-## References & Inspiration
-- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
-- [21st.dev](https://21st.dev) — Premium UI component blocks
-- [Magic UI](https://magicui.design) — Animated components (shimmer, spotlight, aurora)
-- [Aceternity UI](https://ui.aceternity.com) — Parallax, 3D effects, spotlight
-- Flutter Cupertino widgets for authentic iOS feel
+### Layout & Responsive Constraints
+- Always wrap mobile content in a maximum width constraint (e.g., `ConstrainedBox(constraints: BoxConstraints(maxWidth: 520))`) so tablet / iPad screens don't stretch into awkward full-width layouts.
+- Always respect `SafeArea` insets for iOS Dynamic Island and bottom home indicator bar (`MediaQuery.of(context).padding.bottom + 16`).
 
-## Anti-Patterns (DO NOT)
-- ❌ Heavy drop shadows (elevation > 4)
-- ❌ Hard borders > 1px
-- ❌ Abrupt state changes without animation
-- ❌ Dense padding (< 8px)
-- ❌ Flat/generic Material Design defaults
-- ❌ Spinner-only loading (use skeleton shimmer)
-- ❌ Non-rounded corners on cards
-- ❌ Inconsistent color usage
+---
 
+## 5. Anti-AI-Slop Directives
+
+Every design output generated must adhere strictly to these quality barriers:
+1. **Zero Generic Placeholder Text**: Never use "Lorem ipsum", "Title here", "Description goes here", or "John Doe". Always use realistic Indonesian school context (e.g., "SMK Negeri 1 Beringin", "XII RPL 1", "07:15 WIB - Tepat Waktu", "M. Fajar Sidik").
+2. **No Cookie-Cutter Identical Grids**: Vary information hierarchy using typography weight, accent pill badges, and distinct container elevations.
+3. **Defensive UX States**: Every view must gracefully account for:
+   - **Empty State**: Friendly illustration/icon + clear call to action (never an empty white box).
+   - **Loading State**: Content-matched shimmer skeleton.
+   - **Error / Offline State**: Human-readable error message with immediate "Coba Lagi" (Retry) action.
+4. **No Raw Unformatted Data**: Format dates into Indonesian locale (`d MMMM yyyy, HH:mm 'WIB'`), status into badge components, and distance into meters (`12 m dari batas sekolah`).
+5. **Zero Broken Layout Overflows**: Always configure `overflow: TextOverflow.ellipsis` with explicit `maxLines`, and wrap row elements in `Flexible` or `Expanded` where text can vary in length.
+
+---
+
+## 6. Pre-Shipment Quality Checklist
+
+Before completing any UI/UX work:
+- [ ] Visual hierarchy: Is the primary action obvious at first glance?
+- [ ] Contrast & Readability: Does text pass WCAG AA contrast against its background?
+- [ ] Touch targets: Are all clickable/tappable elements at least 44x44pt?
+- [ ] Responsive layout: Does the design adapt cleanly between small mobile screens, large smartphones, and tablet/desktop views?
+- [ ] Micro-animations: Do interactive elements respond with subtle spring or scale feedback?
+- [ ] Loading & Error handling: Are skeleton loaders and error states in place?
+- [ ] Localization: Are all labels, dates, and numbers properly formatted in Indonesian?

@@ -1,100 +1,57 @@
 ---
 name: anti-ai-slop
-description: Quality enforcement skill that prevents generic, templated, or low-effort AI output. Ensures every component has intentional design decisions, unique character, and production polish.
+description: Quality enforcement skill that prevents generic, templated, or low-effort AI output. Ensures every component, copy, and layout has intentional design decisions, realistic domain context, and production polish.
 ---
 
-# Anti AI Slop — Quality Enforcement for Presensi Mobile
+# Anti AI Slop — Quality Enforcement & Design Rigor
 
 ## What is "AI Slop"?
 
-AI slop refers to generic, templated, cookie-cutter output that looks like it was churned out by a language model without thought. It's the equivalent of stock photography in code — technically correct but soulless.
+AI slop refers to generic, cookie-cutter, robotic output that looks like it was churned out by a language model without thought or contextual understanding. In code and UI, it manifests as placeholder text, default unstyled components, missing edge-case handling, and repetitive card layouts.
 
-## Rules
+---
 
-### 1. No Generic Placeholder Content
-- ❌ "Lorem ipsum dolor sit amet"
-- ❌ "Your content here"
-- ❌ "Example text"
-- ✅ Use real Indonesian text from the actual Presensi system
-- ✅ Reference actual school data (SMKN 1 Beringin, Kab. Deli Serdang)
-- ✅ Use realistic student names, NISN numbers, class names
+## 1. Concrete Rules & Enforcement
 
-### 2. No Cookie-Cutter Layouts
-- ❌ Generic card grids with identical styling
-- ❌ Default Material Design with no customization
-- ❌ "I'll add a simple list view here"
-- ✅ Every section should have a unique visual identity
-- ✅ Mix card sizes, layouts, and visual weights
-- ✅ Create visual hierarchy through intentional variation
+### No Generic Placeholder Content
+- ❌ "Lorem ipsum dolor sit amet", "Sample student", "Test title", "User #123"
+- ✅ Use authentic school context: **SMK Negeri 1 Beringin**, Kab. Deli Serdang, Sumatera Utara
+- ✅ Use realistic Indonesian names (e.g., "M. Fajar Sidik", "Siti Rahmawati", "Rizky Pratama")
+- ✅ Use actual vocational majors: **RPL** (Rekayasa Perangkat Lunak), **TKJ** (Teknik Komputer & Jaringan), **DKV**, **TP**, **TKR**, **TBSM**
 
-### 3. No Lazy Color Choices
-- ❌ Using `Colors.blue`, `Colors.red`, `Colors.green` directly
-- ❌ Random hex colors not from the design system
-- ✅ Always use AppColors or explicitly defined Apple system colors
-- ✅ Every color choice should be intentional and documented
+### No Cookie-Cutter Layouts
+- ❌ Repetitive cards with identical styling, borders, and visual weights
+- ❌ Plain default Material Design or uncustomized Tailwind defaults
+- ✅ Create visual hierarchy through intentional variation in container sizes, typography weight, and subtle accent pills
+- ✅ Give every primary action and status a distinct semantic color and micro-interaction
 
-### 4. No Boring Transitions
-- ❌ Instant state changes with no animation
-- ❌ Default MaterialPageRoute transitions
-- ❌ Static loading spinners as the only loading state
-- ✅ Every state change should have a micro-animation
-- ✅ Staggered reveals for list items
-- ✅ Spring physics for interactive elements
-- ✅ Skeleton shimmer for loading states
+### No Instant / Jarring Transitions
+- ❌ Instant pop-in/disappear of elements with 0ms transition
+- ❌ Solitary spinning loaders in empty white containers
+- ✅ Micro-animations on interactive states (`active:scale-[0.97]` or `ScaleTransition(0.96)`)
+- ✅ Content-matched skeleton shimmer during network fetch
 
-### 5. No Redundant Comments
-- ❌ `// This is a button` above a button widget
-- ❌ `// TODO: implement later` with no plan
-- ✅ Comments only for non-obvious logic
-- ✅ Section headers that describe the UX purpose, not the widget type
+### Comprehensive Edge Case & Defensive UX
+- ❌ Missing empty states (blank screens when no data exists)
+- ❌ Non-functional placeholder buttons or "Coming Soon" alerts
+- ❌ Crashes or ugly overflow on long names or missing photos
+- ✅ Always provide designed empty states with an actionable button (e.g. "Belum ada presensi hari ini. Presensi sekarang.")
+- ✅ Defensive photo rendering with fallback initials avatar on network failure
+- ✅ Text truncation (`TextOverflow.ellipsis`, `truncate`) with proper flex constraints
 
-### 6. No Half-Baked Features
-- ❌ Placeholder screens with "Coming Soon"
-- ❌ Non-functional buttons
-- ❌ Hardcoded data that should be dynamic
-- ✅ Every visible element must be functional
-- ✅ Error states must be handled gracefully
-- ✅ Edge cases (empty lists, long text, no avatar) must be designed for
+### Code Quality & Clean Architecture
+- ✅ Zero unused imports or dead variables
+- ✅ Indonesian UI copy with proper spelling and polite tone
+- ✅ Separation of concerns: business logic isolated from UI presentation
+- ✅ Strict compliance with security and privacy requirements (no exposed tokens or raw PII)
 
-### 7. Attention to Detail
-- ✅ Proper text overflow handling (maxLines + ellipsis)
-- ✅ Safe area insets respected
-- ✅ Keyboard-aware layouts
-- ✅ Pull-to-refresh on all scrollable views
-- ✅ Network image error builders with fallback UI
-- ✅ Responsive max-width constraints (520px for tablet)
-- ✅ Loading states for async operations
-- ✅ Haptic-feel press effects on all interactive elements
+---
 
-### 8. Code Quality Standards
-- ✅ No unused imports
-- ✅ No unused variables
-- ✅ `flutter analyze` must pass with 0 issues
-- ✅ Consistent naming conventions
-- ✅ Proper widget extraction (no 500-line build methods)
-- ✅ const constructors where possible
-- ✅ Proper dispose() for controllers and timers
+## 2. Verification Checklist
 
-## Quality Checklist (Before Every Commit)
-
-1. [ ] Does every screen have entrance animations?
-2. [ ] Are all interactive elements responsive to press?
-3. [ ] Are loading states using skeleton shimmer (not just spinners)?
-4. [ ] Are all colors from the design system?
-5. [ ] Are all text styles using GoogleFonts?
-6. [ ] Are network images handled with errorBuilder?
-7. [ ] Are empty states designed (not just blank)?
-8. [ ] Does `flutter analyze` pass clean?
-9. [ ] Are all strings in Indonesian (for UI text)?
-10. [ ] Is the bottom nav bar not overlapping content (enough bottom padding)?
-
-## The Presensi Identity
-
-This isn't a generic school app. It's the **official digital presence system** for SMK Negeri 1 Beringin, built with:
-- Biometric face recognition
-- Satellite geofencing
-- Real-time WhatsApp parent notifications
-- Anti-joki (anti-cheating) measures
-
-Every pixel should reflect this level of sophistication. The app should feel like it was designed by a professional studio, not auto-generated.
-
+Before finalizing any screen, feature, or component:
+1. [ ] Is the content authentic and contextually accurate for SMKN 1 Beringin?
+2. [ ] Are loading, error, and empty states explicitly designed and tested?
+3. [ ] Are interactive elements responsive to tap/click with tactile feedback?
+4. [ ] Are text styles, colors, and border radii conforming to the design tokens?
+5. [ ] Is error handling actionable, guiding the user toward resolution?
