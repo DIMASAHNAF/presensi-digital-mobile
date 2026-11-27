@@ -20,10 +20,20 @@ subprojects {
     }
 }
 
-// AGP 9.x Android Lint invokes JDK 21 APIs (List.removeLast); skip release lint on JDK < 21.
 subprojects {
-    if (JavaVersion.current() < JavaVersion.VERSION_21) {
-        plugins.withId("com.android.library") {
+    plugins.withId("com.android.library") {
+        // Ensure older Flutter plugins (e.g. image_picker_android hardcoding compileSdk 34)
+        // align with compileSdk 36 required by newer flutter_plugin_android_lifecycle / AndroidX.
+        // AGP 9.x requires mutating compileSdk via androidComponents.finalizeDsl rather than afterEvaluate.
+        androidComponents {
+            finalizeDsl { extension ->
+                if (extension.compileSdk == null || extension.compileSdk < 35) {
+                    extension.compileSdk = 36
+                }
+            }
+        }
+        // AGP 9.x Android Lint invokes JDK 21 APIs (List.removeLast); skip release lint on JDK < 21.
+        if (JavaVersion.current() < JavaVersion.VERSION_21) {
             android.lint {
                 checkReleaseBuilds = false
                 abortOnError = false

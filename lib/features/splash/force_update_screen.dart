@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,10 +12,49 @@ class ForceUpdateScreen extends StatelessWidget {
   final String? storeUrl;
   const ForceUpdateScreen({super.key, this.blocking = true, this.storeUrl});
 
+  static const String defaultAndroidStoreUrl =
+      'https://play.google.com/store/apps/details?id=id.sch.smknegeri1beringin.presensi';
+  static const String defaultIosDownloadUrl =
+      'https://presensi.smknegeri1beringin.sch.id';
+
+  static String resolveUpdateUrl({
+    String? storeUrl,
+    required TargetPlatform platform,
+    required bool isWeb,
+  }) {
+    if (storeUrl != null && storeUrl.trim().isNotEmpty) {
+      return storeUrl.trim();
+    }
+    if (!isWeb && platform == TargetPlatform.iOS) {
+      return defaultIosDownloadUrl;
+    }
+    return defaultAndroidStoreUrl;
+  }
+
+  static String resolveButtonLabel({
+    required TargetPlatform platform,
+    required bool isWeb,
+  }) {
+    if (!isWeb && platform == TargetPlatform.iOS) {
+      return 'Unduh Versi Terbaru';
+    }
+    return 'Buka Play Store';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final updateUrl = resolveUpdateUrl(
+      storeUrl: storeUrl,
+      platform: defaultTargetPlatform,
+      isWeb: kIsWeb,
+    );
+    final buttonLabel = resolveButtonLabel(
+      platform: defaultTargetPlatform,
+      isWeb: kIsWeb,
+    );
+
     return Scaffold(
-      backgroundColor:  AppColors.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -21,7 +62,7 @@ class ForceUpdateScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                 Icon(CupertinoIcons.arrow_down_circle,
+                Icon(CupertinoIcons.arrow_down_circle,
                     size: 72, color: AppColors.primaryBlue),
                 const SizedBox(height: 24),
                 Text(
@@ -30,7 +71,7 @@ class ForceUpdateScreen extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color:  AppColors.primaryDark,
+                    color: AppColors.primaryDark,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -42,24 +83,22 @@ class ForceUpdateScreen extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     height: 1.5,
-                    color:  AppColors.textMuted,
+                    color: AppColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoButton(
-                    color:  AppColors.primaryBlue,
+                    color: AppColors.primaryBlue,
                     borderRadius: BorderRadius.circular(14),
                     onPressed: () async {
-                      final url = storeUrl ??
-                          'https://play.google.com/store/apps/details?id=id.sch.smknegeri1beringin.presensi';
-                      final uri = Uri.tryParse(url);
+                      final uri = Uri.tryParse(updateUrl);
                       if (uri != null) {
                         await launchUrl(uri, mode: LaunchMode.externalApplication);
                       }
                     },
-                    child: Text('Buka Play Store',
+                    child: Text(buttonLabel,
                         style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600, fontSize: 16)),
                   ),

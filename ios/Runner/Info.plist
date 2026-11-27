@@ -22,6 +22,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -38,10 +40,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	
+
+	<!-- External URL schemes for url_launcher (Maps, Browser, WhatsApp) -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>comgooglemaps</string>
+		<string>maps</string>
+		<string>whatsapp</string>
+	</array>
+
 	<!-- Permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>Aplikasi presensi memerlukan kamera untuk pemindaian dan verifikasi biometrik wajah siswa.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikasi memerlukan akses galeri foto agar Anda dapat memilih foto profil dan banner siswa.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aplikasi memerlukan izin galeri untuk menyimpan gambar bila diperlukan.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Aplikasi memerlukan GPS untuk memastikan Anda berada di dalam radius geofencing SMK Negeri 1 Beringin saat presensi.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
@@ -300,11 +301,13 @@ class _ScannerScreenState extends State<ScannerScreen>
     const int maxAttempts = 4;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       // Use ResolutionPreset.high (1280x720 / 16:9) to eliminate unnatural 4:3 zoom cropping
+      final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
       final controller = CameraController(
         camera,
         ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup:
+            isIos ? ImageFormatGroup.bgra8888 : ImageFormatGroup.jpeg,
       );
 
       _cameraController = controller;

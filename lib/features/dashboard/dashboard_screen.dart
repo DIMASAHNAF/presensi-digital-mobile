@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -33,10 +34,18 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
   DashboardFullModel? _data;
   GeofenceResult? _geofenceResult;
+  final ValueNotifier<GeofenceResult?> _geofenceNotifier =
+      ValueNotifier<GeofenceResult?>(null);
+
+  StreamSubscription<Position>? _positionSub;
+  Position? _lastPosition;
+  bool _isRefreshingLocation = false;
+  bool _isVerifyingInitialLocation = false;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -49,6 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _updateClock();
     _clockTimer =
         Timer.periodic(const Duration(seconds: 1), (_) => _updateClock());
@@ -58,14 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (widget.initialData != null) {
       _data = widget.initialData;
       _isLoading = false;
-      if (_data!.geofencing != null) {
-        LocationService.verifyGeofence(
-          _data!.geofencing!,
-          networkConfig: _data!.network,
-        ).then((geoRes) {
-          if (mounted) setState(() => _geofenceResult = geoRes);
-        });
-      }
+      _initLocationTracking();
     } else {
       _loadInitialData();
     }
@@ -73,9 +76,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopLocationStream();
+    _geofenceNotifier.dispose();
     _pollTimer?.cancel();
     _clockTimer.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _stopLocationStream();
+    } else if (state == AppLifecycleState.resumed) {
+      // Kembali dari Pengaturan Lokasi / background: langsung cek ulang & hidupkan stream GPS.
+      if (_data?.geofencing != null) {
+        _initLocationTracking(forceVerify: true);
+      }
+    }
+  }
+
+  void _setGeofenceResult(GeofenceResult? res) {
+    if (res?.position != null && !(res?.isMocked ?? false)) {
+      _lastPosition = res!.position;
+    }
+    _geofenceNotifier.value = res;
+    if (mounted) {
+      setState(() => _geofenceResult = res);
+    }
+  }
+
+  void _stopLocationStream() {
+    _positionSub?.cancel();
+    _positionSub = null;
+  }
+
+  Future<void> _initLocationTracking({bool forceVerify = false}) async {
+    final cfg = _data?.geofencing;
+    if (cfg == null) return;
+    if (_isVerifyingInitialLocation && !forceVerify) return;
+    _isVerifyingInitialLocation = true;
+    try {
+      final geoRes = await LocationService.verifyGeofence(
+        cfg,
+        networkConfig: _data?.network,
+      );
+      if (!mounted) return;
+      _setGeofenceResult(geoRes);
+      await _startLocationStreamIfAllowed();
+    } finally {
+      _isVerifyingInitialLocation = false;
+    }
+  }
+
+  Future<void> _startLocationStreamIfAllowed() async {
+    if (_positionSub != null || !mounted) return;
+    if (!await LocationService.hasActivePermission()) return;
+    if (!mounted) return;
+
+    try {
+      _positionSub = LocationService.positionStream().listen(
+        (Position pos) async {
+          if (!mounted || _data?.geofencing == null) return;
+          _lastPosition = pos;
+          final nativeMock = await LocationService.isMockLocation();
+          if (!mounted || _data?.geofencing == null) return;
+          final evaluated = LocationService.evaluatePosition(
+            pos,
+            _data!.geofencing!,
+            networkConfig: _data!.network,
+            isNativeMocked: nativeMock,
+          );
+          _setGeofenceResult(evaluated);
+        },
+        onError: (_) {
+          _stopLocationStream();
+        },
+        cancelOnError: false,
+      );
+    } catch (_) {
+      _stopLocationStream();
+    }
   }
 
   Future<void> _refreshPendingScans() async {
@@ -95,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Polling ringan `/siswa/sesi-aktif` - update sesi & geofence tanpa reload penuh.
+  /// Polling ringan `/siswa/sesi-aktif` - update sesi & geofence tanpa cold-start GPS ulang.
   Future<void> _pollSession() async {
     if (_isPolling || _data == null) return;
     _isPolling = true;
@@ -105,11 +187,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final polled = _data!.applySessionPoll(res.data!);
         setState(() => _data = polled);
         if (polled.geofencing != null) {
-          final geoRes = await LocationService.verifyGeofence(
-            polled.geofencing!,
-            networkConfig: polled.network,
-          );
-          if (mounted) setState(() => _geofenceResult = geoRes);
+          if (_lastPosition != null) {
+            final evaluated = LocationService.evaluatePosition(
+              _lastPosition!,
+              polled.geofencing!,
+              networkConfig: polled.network,
+              isNativeMocked: _geofenceResult?.isMocked ?? false,
+            );
+            _setGeofenceResult(evaluated);
+            if (_positionSub == null) {
+              _startLocationStreamIfAllowed();
+            }
+          } else if (_positionSub == null && !_isVerifyingInitialLocation) {
+            _initLocationTracking();
+          }
         }
       }
     } finally {
@@ -128,19 +219,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (res.success && res.data != null) {
       _data = res.data;
-
-      if (_data!.geofencing != null) {
-        LocationService.verifyGeofence(
-          _data!.geofencing!,
-          networkConfig: _data!.network,
-        ).then((geoRes) {
-          if (mounted) {
-            setState(() => _geofenceResult = geoRes);
-          }
-        });
-      }
-
       setState(() => _isLoading = false);
+      _initLocationTracking(forceVerify: true);
     } else {
       setState(() {
         _isLoading = false;
@@ -201,16 +281,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refreshLocation() async {
-    if (_data == null || _data!.geofencing == null) return;
+    if (_data == null || _data!.geofencing == null || _isRefreshingLocation) {
+      return;
+    }
     HapticFeedback.mediumImpact();
-    _showToast('Memperbarui koordinat lokasi...');
-    final geoRes = await LocationService.verifyGeofence(
-      _data!.geofencing!,
-      networkConfig: _data!.network,
-    );
-    final maxRadius = _data!.geofencing!.radiusMeters.toInt();
-    if (mounted) {
-      setState(() => _geofenceResult = geoRes);
+    setState(() => _isRefreshingLocation = true);
+    _showToast('Mengunci koordinat GPS terbaru...');
+    try {
+      final geoRes = await LocationService.verifyGeofence(
+        _data!.geofencing!,
+        networkConfig: _data!.network,
+      );
+      if (!mounted) return;
+      _setGeofenceResult(geoRes);
+      await _startLocationStreamIfAllowed();
+
+      if (!mounted) return;
+      final isPolygon = _data!.geofencing!.mode == 'polygon' &&
+          _data!.geofencing!.polygonPoints.length >= 3;
+      final maxRadius = _data!.geofencing!.radiusMeters.toInt();
+
       if (geoRes.issue == LocationIssue.serviceDisabled) {
         _showActionToast(
           'GPS perangkat sedang mati. Nyalakan Lokasi untuk presensi.',
@@ -230,9 +320,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showToast(geoRes.isInside
           ? (geoRes.verifiedByWifi
               ? 'Terverifikasi melalui jaringan WiFi resmi sekolah.'
-              : 'Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)} m dari sekolah.')
+              : geoRes.geofencingDisabled
+                  ? 'Geofencing sedang nonaktif. Presensi diizinkan dari lokasi saat ini.'
+                  : 'Lokasi valid: ${geoRes.distanceMeters.toStringAsFixed(0)} m dari sekolah.')
           : (geoRes.errorMessage ??
-              'Di luar area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} (Maks ${maxRadius}m).'));
+              (isPolygon
+                  ? 'Di luar batas area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} dari batas.'
+                  : 'Di luar area sekolah: ${geoRes.distanceMeters > 2000 ? '>2 km' : '${geoRes.distanceMeters.toStringAsFixed(0)} m'} (Maks ${maxRadius}m).')));
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshingLocation = false);
+      }
     }
   }
 
@@ -398,6 +496,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   BerandaTab(
                     data: _data!,
                     geofenceResult: _geofenceResult,
+                    geofenceListenable: _geofenceNotifier,
+                    isRefreshingLocation: _isRefreshingLocation,
                     currentTimeWIB: _currentTimeWIB,
                     onOpenScanner: _openScanner,
                     onOpenEnrollment: _openEnrollment,

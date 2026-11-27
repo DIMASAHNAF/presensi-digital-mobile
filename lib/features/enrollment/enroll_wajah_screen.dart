@@ -173,11 +173,13 @@ class _EnrollWajahScreenState extends State<EnrollWajahScreen>
     // driver/peramban belum melepas stream. Coba beberapa kali dengan jeda.
     const int maxAttempts = 4;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
       final controller = CameraController(
         camera,
         ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup:
+            isIos ? ImageFormatGroup.bgra8888 : ImageFormatGroup.jpeg,
       );
       _cameraController = controller;
 

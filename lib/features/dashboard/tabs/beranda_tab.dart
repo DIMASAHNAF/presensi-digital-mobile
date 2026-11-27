@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,7 @@ import '../../../../core/models/user_model.dart';
 import '../../../../core/services/location_service.dart';
 import '../dialogs/classmate_detail_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
+import '../widgets/campus_map_widget.dart';
 import '../widgets/jadwal_pelajaran_widget.dart';
 import '../../../core/services/notification_service.dart';
 import '../dialogs/notification_sheet.dart';
@@ -23,6 +25,8 @@ import '../../../core/theme/app_theme.dart';
 class BerandaTab extends StatefulWidget {
   final DashboardFullModel data;
   final GeofenceResult? geofenceResult;
+  final ValueListenable<GeofenceResult?>? geofenceListenable;
+  final bool isRefreshingLocation;
   final String currentTimeWIB;
   final VoidCallback onOpenScanner;
   final VoidCallback? onOpenEnrollment;
@@ -37,6 +41,8 @@ class BerandaTab extends StatefulWidget {
     super.key,
     required this.data,
     required this.geofenceResult,
+    this.geofenceListenable,
+    this.isRefreshingLocation = false,
     required this.currentTimeWIB,
     required this.onOpenScanner,
     this.onOpenEnrollment,
@@ -52,25 +58,7 @@ class BerandaTab extends StatefulWidget {
   State<BerandaTab> createState() => _BerandaTabState();
 }
 
-class _BerandaTabState extends State<BerandaTab>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _rippleController;
-
-  @override
-  void initState() {
-    super.initState();
-    // Subtle Apple Maps-style beacon halo
-    _rippleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _rippleController.dispose();
-    super.dispose();
-  }
+class _BerandaTabState extends State<BerandaTab> {
 
   void _openEditProfile() {
     HapticFeedback.lightImpact();
@@ -639,455 +627,17 @@ class _BerandaTabState extends State<BerandaTab>
     }
   }
 
-  //  2B. WIDGET PETA (Apple Maps-inspired calm beacon + live student dot + Maps launcher)
+  //  2B. WIDGET PETA INTERAKTIF (FlutterMap + Polygon/Radius + Live GPS + Fullscreen)
 
   Widget _buildMapWidget() {
-    final geoCfg = widget.data.geofencing;
-    final radiusM = geoCfg?.radiusMeters.toInt() ?? 110;
-    final geo = widget.geofenceResult;
-    final pos = geo?.position;
-
-    // Relative offset of student's live GPS dot from school center (clamped nicely inside card)
-    double studentDx = 0;
-    double studentDy = 0;
-    bool showStudentDot = false;
-    if (pos != null && geoCfg != null && !(geo?.isMocked ?? false)) {
-      final dLatM = (pos.latitude - geoCfg.latitude) * 110574.0;
-      final dLngM = (pos.longitude - geoCfg.longitude) * 111000.0;
-      // Scale: ~110m maps to ~44px from center
-      final scale = 44.0 / (radiusM > 0 ? radiusM : 110);
-      studentDx = (dLngM * scale).clamp(-110.0, 110.0);
-      studentDy = (-dLatM * scale).clamp(-52.0, 52.0);
-      showStudentDot = true;
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        height: 158,
-        width: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Instant campus map backdrop (zero blank grey OSM tile failures)
-            Image.asset(
-              'assets/images/map_campus_v2.png',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Image.asset(
-                'assets/images/map_campus.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            if (AppColors.isDark)
-              Container(color: Colors.black.withOpacity(0.42)),
-
-            // Calm Apple Maps pulsing beacon at school center
-            Center(
-              child: SizedBox(
-                width: 112,
-                height: 112,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _rippleController,
-                      builder: (context, _) {
-                        final p = _rippleController.value;
-                        final scale = 0.55 + (p * 1.45);
-                        final opacity = (1.0 - p).clamp(0.0, 1.0) * 0.32;
-                        return Transform.scale(
-                          scale: scale,
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryBlue.withOpacity(opacity),
-                              border: Border.all(
-                                color: AppColors.primaryBlue
-                                    .withOpacity(opacity * 1.4),
-                                width: 1.2,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryBlue,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.18),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.school_rounded,
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Live student position dot when GPS lock is acquired
-            if (showStudentDot)
-              Center(
-                child: Transform.translate(
-                  offset: Offset(studentDx, studentDy),
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: (geo?.isInside ?? false)
-                          ? AppColors.success
-                          : AppColors.warning,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.28),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-            // Top-center live geofence/WiFi/permission pill (tappable!)
-            Positioned(
-              top: 10,
-              left: 44,
-              right: 44,
-              child: Center(
-                child: GestureDetector(
-                  onTap: _handleMapBadgeTap,
-                  behavior: HitTestBehavior.opaque,
-                  child: _buildMapStatusBadge(),
-                ),
-              ),
-            ),
-
-            // Top-right Google Maps launcher button
-            Positioned(
-              top: 10,
-              right: 10,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _openGoogleMaps();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withOpacity(0.92),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    CupertinoIcons.map_fill,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-
-            // Bottom-left school radius pill (dynamic, zero mojibake)
-            Positioned(
-              bottom: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.62),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      CupertinoIcons.shield_fill,
-                      size: 11,
-                      color: AppColors.success,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'SMKN 1 Beringin • ${radiusM}m',
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Bottom-right circular locate/refresh button
-            if (widget.onRefreshLocation != null)
-              Positioned(
-                bottom: 10,
-                right: 10,
-                child: GestureDetector(
-                  onTap: _handleMapBadgeTap,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withOpacity(0.95),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.14),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      CupertinoIcons.location_fill,
-                      size: 16,
-                      color: AppColors.primaryBlue,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMapStatusBadge() {
-    final geo = widget.geofenceResult;
-
-    if (geo == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(color:  AppColors.infoBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-             SizedBox(
-              width: 10,
-              height: 10,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: AppColors.primaryBlue,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Mengunci Titik GPS...',
-              style: GoogleFonts.inter(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w600,
-                color:  AppColors.primaryBlue,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (geo.isMocked) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(color:  AppColors.dangerBg),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-             Icon(
-              CupertinoIcons.clear_circled_solid,
-              size: 11,
-              color: AppColors.danger,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Fake GPS Terdeteksi',
-              style: GoogleFonts.inter(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color:  AppColors.danger,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (geo.errorMessage != null && !geo.isInside) {
-      String label = 'GPS Belum Akurat';
-      Color pillColor = AppColors.textSecondary;
-      IconData pillIcon = CupertinoIcons.location;
-
-      if (geo.issue == LocationIssue.serviceDisabled) {
-        label = 'GPS Nonaktif • Aktifkan';
-        pillColor = AppColors.warning;
-        pillIcon = CupertinoIcons.location_slash_fill;
-      } else if (geo.issue == LocationIssue.permissionDenied) {
-        label = 'Izinkan Akses Lokasi';
-        pillColor = AppColors.primaryBlue;
-        pillIcon = CupertinoIcons.lock_shield_fill;
-      } else if (geo.issue == LocationIssue.permissionDeniedForever) {
-        label = 'Buka Pengaturan Lokasi';
-        pillColor = AppColors.danger;
-        pillIcon = CupertinoIcons.gear_alt_fill;
-      } else if (geo.issue == LocationIssue.outsideArea) {
-        label = 'Di Luar Area • ${geo.distanceMeters.toStringAsFixed(0)}m';
-        pillColor = AppColors.warning;
-        pillIcon = CupertinoIcons.location_solid;
-      }
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(pillIcon, size: 12, color: pillColor),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: pillColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (geo.isInside) {
-      final label = geo.verifiedByWifi
-          ? 'WiFi Sekolah • Valid'
-          : 'Area Valid • ${geo.distanceMeters.toStringAsFixed(0)}m';
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              geo.verifiedByWifi
-                  ? CupertinoIcons.wifi
-                  : CupertinoIcons.checkmark_alt_circle_fill,
-              size: 12,
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.success,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color:  AppColors.warningBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-           Icon(
-            CupertinoIcons.location_solid,
-            size: 11,
-            color: AppColors.warning,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            'Di Luar Area • ${geo.distanceMeters.toStringAsFixed(0)}m',
-            style: GoogleFonts.inter(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color:  AppColors.warning,
-            ),
-          ),
-        ],
-      ),
+    return CampusMapWidget(
+      geofencing: widget.data.geofencing,
+      geofenceResult: widget.geofenceResult,
+      geofenceListenable: widget.geofenceListenable,
+      isRefreshingLocation: widget.isRefreshingLocation,
+      onRefreshLocation: widget.onRefreshLocation,
+      onBadgeTap: _handleMapBadgeTap,
+      onOpenGoogleMaps: _openGoogleMaps,
     );
   }
 
